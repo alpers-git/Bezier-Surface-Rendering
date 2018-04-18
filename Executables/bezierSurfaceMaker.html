@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html>
+<head>
 
-<script id="vertex-shader" type="x-shader/x-vertex">
+    <link rel="stylesheet" href="../Source/style/bezier.css">
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
 
     attribute  vec4 vPosition;
     
@@ -12,8 +15,10 @@
     {
         gl_Position = projectionMatrix*modelViewMatrix*vPosition;
     } 
+
+
     </script>
-    
+
     <script id="fragment-shader" type="x-shader/x-fragment">
     
     precision mediump float;
@@ -26,27 +31,28 @@
         gl_FragColor = fColor;
     }
 
-</script>
+    </script>
 
-<script type="text/javascript" src="../Source/webgl-utils.js"></script>
-<script type="text/javascript" src="../Source/initShaders.js"></script>
-<script type="text/javascript" src="../Source/MV.js"></script>
-<script type="text/javascript" src="../Source/w3.js"></script>
-<script type="text/javascript" src="../Source/bezierSurfaceMaker.js"></script>
+    <script type="text/javascript" src="../Source/webgl-utils.js"></script>
+    <script type="text/javascript" src="../Source/initShaders.js"></script>
+    <script type="text/javascript" src="../Source/MV.js"></script>
+    <script type="text/javascript" src="../Source/w3.js"></script>
+    <script type="text/javascript" src="../Source/bezierSurfaceMaker.js"></script>
+
+</head>
+
 <body>
 
 <div id="slider1">
-        body angle -10 <input id="slide" type="range"
-            min="-10" max="10" step="0.1" value="1" oninput="changeValue(this.value)"
-            />
-            10
-        </div><br/>
+    <p>body angle -10 to 10. Currently: 1</p>
+    <input class="slider" id="slide" type="range" min="-10" max="10" step="0.1" value="1" oninput="changeValue(this.value)"/>
+</div>
+<br/>
 
 
 <canvas id="gl-canvas" width="512" height="512">
-Oops ... your browser doesn't support the HTML5 canvas element
+    Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
-
 
 
 </body>
