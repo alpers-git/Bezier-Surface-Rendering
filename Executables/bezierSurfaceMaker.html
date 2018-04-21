@@ -7,12 +7,13 @@
     <script id="vertex-shader" type="x-shader/x-vertex">
 
     attribute  vec4 vPosition;
-    
+
     uniform mat4 modelViewMatrix;
     uniform mat4 projectionMatrix;
-    
+
     void main() 
     {
+
         gl_Position = projectionMatrix*modelViewMatrix*vPosition;
     } 
 
@@ -43,17 +44,15 @@
 
 <body>
 
-<div id="slider1">
-    <p>body angle -10 to 10. Currently: 1</p>
-    <input class="slider" id="slide" type="range" min="-10" max="10" step="0.1" value="1" oninput="changeValue(this.value)"/>
-</div>
-<br/>
-
-
-<canvas id="gl-canvas" width="512" height="512">
+<canvas id="gl-canvas" width="1024" height="512">
     Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 
+<div id="slider1">
+    <p> Push it! -10 to 10. Currently: 1</p>
+    <input class="slider" id="slide" type="range" min="-10" max="10" step="0.1" value="1" oninput="changeValue(this.value)"/>
+</div>
+<br/>
 
 </body>
 </html>

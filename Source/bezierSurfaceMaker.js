@@ -1,43 +1,38 @@
 var gl;
 
-var nRows = 15;
+var nRows = 4;
 var nColumns = 15;
-var x = 1;
 
-// data for radial hat function: sin(Pi*r)/(Pi*r)
+var  angle = 0.0;
+var  axis = [0, 0, 1];
 
-/*var data = [];
-for( var i = 0; i < nRows; ++i ) {
-    data.push( [] );
-    var x = Math.PI*(4*i/nRows-2.0);
-    
-    for( var j = 0; j < nColumns; ++j ) {
-        var y = Math.PI*(4*j/nRows-2.0);
-        var r = Math.sqrt(x*x+y*y);
-        
-        // take care of 0/0 for r = 0
-        
-        data[i][j] = r ? Math.sin(r) / r : 1.0;
-    }
-}*/
+var trackingMouse = false;
+var trackballMove = false;
 
-let angleSldierTemplate = "body angle -10 to 10. Currently: ";
+var lastPos = [0, 0, 0];
+var curx, cury;
+var startX, startY;
+
+let angleSldierTemplate = "Push it! -10 to 10. Currently: ";
 
 var vertices = [];
 var pointsArray = [];
 var indexArray = [];
 var controlPoints = [];// temporary 4x4 control points
 
+var vBufferId;
+var vPosition
 
 var num = 1;
 var fColor;
 var nSegments = 10;
 
-var near = -10;
-var far = 10;
+var near = 4;
+var far = 20;
+
 var radius = 6.0;
 var theta = 0.0;
-var phi = 0.0;
+var phi = 1.0;
 var dr = 5.0 * Math.PI / 180.0;
 
 const black = vec4(0.0, 0.0, 0.0, 1.0);
@@ -46,22 +41,11 @@ const blue = vec4(0.0, 0.0, 1.0, 1.0);
 const at = vec3(0.0, 0.0, 0.0);
 const up = vec3(0.0, 1.0, 0.0);
 
-var left = -2.0;
-var right = 2.0;
-var ytop = 2.0;
-var bottom = -2.0;
+var fovy = 60;
+var aspect = 2;
 
 var modeViewMatrix, projectionMatrix;
 var modelViewMatrixLoc, projectionMatrixLoc;
-
-function quad(a, b, c, d) {
-    pointsArray.push(vertices[a]);
-    pointsArray.push(vertices[b]);
-    pointsArray.push(vertices[c]);
-    pointsArray.push(vertices[a]);
-    pointsArray.push(vertices[c]);
-    pointsArray.push(vertices[d]);
-}
 
 //Refference:https://www.scratchapixel.com/lessons/advanced-rendering/bezier-curve-rendering-utah-teapot
 function evaluateBezierCurve(cPoints) {
@@ -87,10 +71,9 @@ function evaluateBezierCurve(cPoints) {
         Pt = add(Pt, p3);
         Pt = add(Pt, p4);
         Pt[3] = 1;
-        //console.log(Pt);
+
         vertices.push(Pt);
     }
-    //pointsArray.push(Pt);
 }
 
 function evaluateBezierSurface() {
@@ -115,7 +98,58 @@ function changeValue(value) {
     document.getElementById("slider1").children[0].innerHTML = angleSldierTemplate + value;
     console.log(value);
     num = value;
+
+    controlPoints = [vec4(-1, -1, 1, 1), vec4(-0.5, -1, 1, 1), vec4(0.5, -1, 1, 1), vec4(1, -1, 1, 1),
+        vec4(-1, -0.5, 1, 1), vec4(-0.5, -0.5, num, 1), vec4(0.5, -0.5, num, 1), vec4(1, -0.5, 1, 1),
+        vec4(-1, 0.5, 1, 1), vec4(-0.5, 0.5, num, 1), vec4(0.5, 0.5, num, 1), vec4(1, 0.5, 1, 1),
+        vec4(-1, 1, 1, 1), vec4(-0.5, 1, 1, 1), vec4(0.5, 1, 1, 1), vec4(1, 1, 1, 1)];
 }
+
+function pushVertices(buffer, data)
+{
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(data));
+}
+
+//----------------------------------------------------
+
+function multq( a,  b)
+{
+   // vec4(a.x*b.x - dot(a.yzw, b.yzw), a.x*b.yzw+b.x*a.yzw+cross(b.yzw, a.yzw))
+
+   var s = vec3(a[1], a[2], a[3]);
+   var t = vec3(b[1], b[2], b[3]);
+   return(vec4(a[0]*b[0] - dot(s,t), add(cross(t, s), add(scale(a[0],t), scale(b[0],s)))));
+}
+
+
+function mouseMotion( x,  y)
+{
+    var dx, dy, dz;
+
+    if(trackingMouse) {
+      theta = x - startX;
+      phi = y - startY;
+    }
+}
+
+function startMotion( x,  y)
+{
+    trackingMouse = true;
+    startX = x;
+    startY = y;
+    curx += x;
+    cury += y;
+	  trackballMove=true;
+}
+
+function stopMotion( x,  y)
+{
+    trackingMouse = false;
+	trackballMove = false;
+    
+}
+
 
 window.onload = init;
 
@@ -135,6 +169,7 @@ function init() {
     // so lines will be in front of filled triangles
 
     gl.enable(gl.DEPTH_TEST);
+
     gl.depthFunc(gl.LEQUAL);
     gl.enable(gl.POLYGON_OFFSET_FILL);
     gl.polygonOffset(1.0, 2.0);
@@ -146,53 +181,74 @@ function init() {
 
     evaluateBezierSurface();
 
-    //push the points
-    for (var i = 0; i < 9; i++) {
-        //if( i % (nSegments-1) != 0 || i % (nSegments+1) != 0)
-        quad(i + nSegments, i + nSegments + 1, i + 1, i);
-    }
-    for (var i = 10; i < 19; i++) {
-        //if( i % (nSegments-1) != 0 || i % (nSegments+1) != 0)
-        quad(i + nSegments, i + nSegments + 1, i + 1, i);
-    }
-    for (var i = 20; i < 29; i++) {
-        //if( i % (nSegments-1) != 0 || i % (nSegments+1) != 0)
-        quad(i + nSegments, i + nSegments + 1, i + 1, i);
+    for(var j = 0; j <= nRows; j++)
+    {
+        for (var i = j*nSegments; i < (j+1)* nSegments -1; i++) {
+            indexArray.push(i);
+            indexArray.push(i+1);
+            indexArray.push(nSegments + i);
+            indexArray.push(nSegments + i +1);
+        }
+
     }
 
     var program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
+
+    var iBufferId = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBufferId);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indexArray), gl.STATIC_DRAW);
 
     fColor = gl.getUniformLocation(program, "fColor");
 
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
     projectionMatrixLoc = gl.getUniformLocation(program, "projectionMatrix");
 
-    var vBufferId = gl.createBuffer();
+    vBufferId = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vBufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
 
 
-    var vPosition = gl.getAttribLocation(program, "vPosition");
+    vPosition = gl.getAttribLocation(program, "vPosition");
     gl.enableVertexAttribArray(vPosition);
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
 
 
-    //gl.enableVertexAttribArray( vPosition );
-    //gl.enableVertexAttribArray( 2 );
-    gl.bindBuffer(gl.ARRAY_BUFFER, vBufferId);
-    //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    canvas.addEventListener("mousedown", function(event){
+      var x = 2*event.clientX/canvas.width-1;
+      var y = 2*(canvas.height-event.clientY)/canvas.height-1;
+      startMotion(x, y);
+    });
+
+    canvas.addEventListener("mouseup", function(event){
+      var x = 2*event.clientX/canvas.width-1;
+      var y = 2*(canvas.height-event.clientY)/canvas.height-1;
+      stopMotion(x, y);
+    });
+
+    canvas.addEventListener("mousemove", function(event){
+
+      var x = 2*event.clientX/canvas.width-1;
+      var y = 2*(canvas.height-event.clientY)/canvas.height-1;
+      mouseMotion(x, y);
+    } );
+
     render();
 }
 
 //var indexBuffer
-var a = 10;
+var a = 1;
 
 //var x;
 function render() {
-    theta += 0.01;
+    //theta += 0.01;
     a++;
     //phi += 0.001;
+
+    evaluateBezierSurface();
+
+    pushVertices(vBufferId, vertices);
+
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     var eye = vec3(radius * Math.sin(theta) * Math.cos(phi),
@@ -200,7 +256,7 @@ function render() {
         radius * Math.cos(theta));
 
     modelViewMatrix = lookAt(eye, at, up);
-    projectionMatrix = ortho(left, right, bottom, ytop, near, far);
+    projectionMatrix = perspective( fovy, aspect, near, far )
 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
@@ -208,16 +264,16 @@ function render() {
     // draw each quad as two filled red triangles
     // and then as two black line loops
 
-    for (var i = 0; i < pointsArray.length; i += 3) {
+    for (var i = 0; i <indexArray.length; i += 4) 
+    {
         gl.uniform4fv(fColor, flatten(blue));
-        gl.drawArrays(gl.TRIANGLE_STRIP, i, 3);
+        gl.drawElements( gl.TRIANGLE_STRIP, 4, gl.UNSIGNED_BYTE, i );
         gl.uniform4fv(fColor, flatten(black));
-        //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-        gl.drawArrays(gl.LINE_LOOP, i, 3);
+        gl.drawElements( gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i );
     }
 
     pointsArray = [];
     vertices = [];
 
-    requestAnimFrame(init);
+    requestAnimFrame(render);
 }
