@@ -16,7 +16,6 @@ var startX, startY;
 let angleSldierTemplate = "Push it! -10 to 10. Currently: ";
 
 var vertices = [];
-var pointsArray = [];
 var indexArray = [];
 var controlPoints = [];// temporary 4x4 control points
 
@@ -48,50 +47,49 @@ var modeViewMatrix, projectionMatrix;
 var modelViewMatrixLoc, projectionMatrixLoc;
 
 //Refference:https://www.scratchapixel.com/lessons/advanced-rendering/bezier-curve-rendering-utah-teapot
-function evaluateBezierCurve(cPoints) {
-    var Pt = [];
-    for (var i = 0; i < nSegments; i++) {
-        var t = i / nSegments;
-        // compute coefficients
-        var k1 = (1 - t) * (1 - t) * (1 - t);
-        //console.log(k1);
-        var k2 = 3 * (1 - t) * (1 - t) * t;
-        var k3 = 3 * (1 - t) * t * t;
-        var k4 = t * t * t;
-        // weight the four control points using coefficients
-        var p1 = new vec4(cPoints[0][0] * k1, cPoints[0][1] * k1,
-            cPoints[0][2] * k1, cPoints[0][3]);
-        var p2 = new vec4(cPoints[1][0] * k2, cPoints[1][1] * k2,
-            cPoints[1][2] * k2, cPoints[1][3]);
-        var p3 = new vec4(cPoints[2][0] * k3, cPoints[2][1] * k3,
-            cPoints[2][2] * k3, cPoints[2][3]);
-        var p4 = new vec4(cPoints[3][0] * k4, cPoints[3][1] * k4,
-            cPoints[3][2] * k4, cPoints[3][3]);
-        Pt = add(p1, p2);
-        Pt = add(Pt, p3);
-        Pt = add(Pt, p4);
-        Pt[3] = 1;
+function evaluateBezierCurve(cPoints, t) {
 
-        vertices.push(Pt);
-    }
+    //console.log(cPoints[1]);
+    var Pt = [];
+    // compute coefficients
+    var k1 = (1 - t) * (1 - t) * (1 - t);
+    //console.log(k1);
+    var k2 = 3 * (1 - t) * (1 - t) * t;
+    var k3 = 3 * (1 - t) * t * t;
+    var k4 = t * t * t;
+    // weight the four control points using coefficients
+    var p1 = new vec4(cPoints[0][0] * k1, cPoints[0][1] * k1,
+        cPoints[0][2] * k1, cPoints[0][3]);
+    var p2 = new vec4(cPoints[1][0] * k2, cPoints[1][1] * k2,
+        cPoints[1][2] * k2, cPoints[1][3]);
+    var p3 = new vec4(cPoints[2][0] * k3, cPoints[2][1] * k3,
+        cPoints[2][2] * k3, cPoints[2][3]);
+    var p4 = new vec4(cPoints[3][0] * k4, cPoints[3][1] * k4,
+        cPoints[3][2] * k4, cPoints[3][3]);
+
+    Pt = add(p1, p2);
+    Pt = add(Pt, p3);
+    Pt = add(Pt, p4);
+    Pt[3] = 1;
+    //console.log(Pt);
+    return Pt;
 }
 
-function evaluateBezierSurface() {
-    for (var i = 0; i < 4; i++) {
-        var cPoints = [];
-
-        cPoints.push(controlPoints[i * 4]);
-
-        cPoints.push(controlPoints[i * 4 + 1]);
-
-        cPoints.push(controlPoints[i * 4 + 2]);
-
-        cPoints.push(controlPoints[i * 4 + 3]);
-
-        //console.log(cPoints);
-
-        evaluateBezierCurve(cPoints);
+function evaluateBezierSurface(cPoints, u, v) 
+{
+    var uCurve = [];
+    var selectedCP = [];
+    for (var i = 0; i < 4; i++) 
+    {
+        selectedCP.push(cPoints[i * 4]);
+        selectedCP.push(cPoints[i * 4 + 1]);
+        selectedCP.push(cPoints[i * 4 + 2]);
+        selectedCP.push(cPoints[i * 4 + 3]);
+        uCurve.push(evaluateBezierCurve(selectedCP, u));
     }
+    //var x = evaluateBezierCurve(uCurve, v);
+    //console.log(x);
+    return evaluateBezierCurve(uCurve, v);
 }
 
 function changeValue(value) {
@@ -179,7 +177,15 @@ function init() {
         vec4(-1, 0.5, 1, 1), vec4(-0.5, 0.5, num, 1), vec4(0.5, 0.5, num, 1), vec4(1, 0.5, 1, 1),
         vec4(-1, 1, 1, 1), vec4(-0.5, 1, 1, 1), vec4(0.5, 1, 1, 1), vec4(1, 1, 1, 1)];
 
-    evaluateBezierSurface();
+    for(var i =0; i <= nSegments; i++ )
+    {
+        for(var j = 0; j <= nSegments; j++)
+        {
+            //console.log(controlPoints);
+            //console.log(evaluateBezierSurface(controlPoints, i/nSegments, j/nSegments));
+            vertices.push(evaluateBezierSurface(controlPoints, i/nSegments, j/nSegments));
+        }
+    }
 
     for(var j = 0; j <= nRows; j++)
     {
@@ -195,9 +201,9 @@ function init() {
     var program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
-    var iBufferId = gl.createBuffer();
+    /*var iBufferId = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBufferId);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indexArray), gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indexArray), gl.STATIC_DRAW);*/
 
     fColor = gl.getUniformLocation(program, "fColor");
 
@@ -208,10 +214,11 @@ function init() {
     gl.bindBuffer(gl.ARRAY_BUFFER, vBufferId);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
 
-
     vPosition = gl.getAttribLocation(program, "vPosition");
     gl.enableVertexAttribArray(vPosition);
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
+
+    //pushVertices(vBufferId, vertices);
 
 
     canvas.addEventListener("mousedown", function(event){
@@ -232,7 +239,7 @@ function init() {
       var y = 2*(canvas.height-event.clientY)/canvas.height-1;
       mouseMotion(x, y);
     } );
-
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBufferId);
     render();
 }
 
@@ -245,9 +252,15 @@ function render() {
     a++;
     //phi += 0.001;
 
-    evaluateBezierSurface();
-
-    pushVertices(vBufferId, vertices);
+    for(var i =0; i <= nSegments; i++ )
+    {
+        for(var j = 0; j <= nSegments; j++)
+        {
+            //console.log(controlPoints);
+            //console.log(evaluateBezierSurface(controlPoints, i/nSegments, j/nSegments));
+            vertices.push(evaluateBezierSurface(controlPoints, i/nSegments, j/nSegments));
+        }
+    }
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -264,15 +277,16 @@ function render() {
     // draw each quad as two filled red triangles
     // and then as two black line loops
 
-    for (var i = 0; i <indexArray.length; i += 4) 
+    for (var i = 0; i <a; i += 4) 
     {
         gl.uniform4fv(fColor, flatten(blue));
-        gl.drawElements( gl.TRIANGLE_STRIP, 4, gl.UNSIGNED_BYTE, i );
+        gl.drawArrays( gl.TRIANGLE_STRIP, i, 4 );
+        //console.log(a);
         gl.uniform4fv(fColor, flatten(black));
-        gl.drawElements( gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i );
+        //gl.drawElements( gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i );
     }
 
-    pointsArray = [];
+    //pointsArray = [];
     vertices = [];
 
     requestAnimFrame(render);
