@@ -36,6 +36,7 @@ var dr = 5.0 * Math.PI / 180.0;
 
 const black = vec4(0.0, 0.0, 0.0, 1.0);
 const blue = vec4(0.0, 0.0, 1.0, 1.0);
+const red = vec4(1.0, 0.5, 0.0, 1.0);
 
 const at = vec3(0.0, 0.0, 0.0);
 const up = vec3(0.0, 1.0, 0.0);
@@ -49,7 +50,7 @@ var modelViewMatrixLoc, projectionMatrixLoc;
 //Refference:https://www.scratchapixel.com/lessons/advanced-rendering/bezier-curve-rendering-utah-teapot
 function evaluateBezierCurve(cPoints, t) {
 
-    //console.log(cPoints[1]);
+    //console.log(cP);
     var Pt = [];
     // compute coefficients
     var k1 = (1 - t) * (1 - t) * (1 - t);
@@ -81,6 +82,7 @@ function evaluateBezierSurface(cPoints, u, v)
     var selectedCP = [];
     for (var i = 0; i < 4; i++) 
     {
+        selectedCP = [];
         selectedCP.push(cPoints[i * 4]);
         selectedCP.push(cPoints[i * 4 + 1]);
         selectedCP.push(cPoints[i * 4 + 2]);
@@ -181,19 +183,18 @@ function init() {
     {
         for(var j = 0; j <= nSegments; j++)
         {
-            //console.log(controlPoints);
-            //console.log(evaluateBezierSurface(controlPoints, i/nSegments, j/nSegments));
             vertices.push(evaluateBezierSurface(controlPoints, i/nSegments, j/nSegments));
         }
     }
 
-    for(var j = 0; j <= nRows; j++)
+    for(var i = 0; i <= nSegments; i++)
     {
-        for (var i = j*nSegments; i < (j+1)* nSegments -1; i++) {
-            indexArray.push(i);
-            indexArray.push(i+1);
-            indexArray.push(nSegments + i);
-            indexArray.push(nSegments + i +1);
+        for (var j = i * nSegments; j <= (i+1) * nSegments ; j++) 
+        {
+            indexArray.push(j - 1);
+            indexArray.push(j);
+            indexArray.push(nSegments + j);
+            indexArray.push(nSegments + j-1);
         }
 
     }
@@ -201,9 +202,9 @@ function init() {
     var program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
-    /*var iBufferId = gl.createBuffer();
+    var iBufferId = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBufferId);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indexArray), gl.STATIC_DRAW);*/
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indexArray), gl.STATIC_DRAW);
 
     fColor = gl.getUniformLocation(program, "fColor");
 
@@ -218,7 +219,7 @@ function init() {
     gl.enableVertexAttribArray(vPosition);
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
 
-    //pushVertices(vBufferId, vertices);
+    pushVertices(vBufferId, vertices);
 
 
     canvas.addEventListener("mousedown", function(event){
@@ -248,19 +249,22 @@ var a = 1;
 
 //var x;
 function render() {
-    //theta += 0.01;
+    theta += 0.01;
     a++;
+
     //phi += 0.001;
+    vertices = [];
 
     for(var i =0; i <= nSegments; i++ )
     {
         for(var j = 0; j <= nSegments; j++)
         {
-            //console.log(controlPoints);
-            //console.log(evaluateBezierSurface(controlPoints, i/nSegments, j/nSegments));
             vertices.push(evaluateBezierSurface(controlPoints, i/nSegments, j/nSegments));
         }
     }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBufferId);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -277,17 +281,15 @@ function render() {
     // draw each quad as two filled red triangles
     // and then as two black line loops
 
-    for (var i = 0; i <a; i += 4) 
+    for (var i = 0; i <indexArray.length; i +=4) 
     {
-        gl.uniform4fv(fColor, flatten(blue));
-        gl.drawArrays( gl.TRIANGLE_STRIP, i, 4 );
-        //console.log(a);
+        gl.uniform4fv(fColor, flatten(red));
+        gl.drawElements( gl.TRIANGLE_FAN, 4, gl.UNSIGNED_BYTE, i );
         gl.uniform4fv(fColor, flatten(black));
-        //gl.drawElements( gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i );
+        gl.drawElements( gl.LINE_LOOP, 4, gl.UNSIGNED_BYTE, i );
     }
 
     //pointsArray = [];
-    vertices = [];
 
     requestAnimFrame(render);
 }
