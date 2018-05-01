@@ -1,28 +1,30 @@
-var gl;
+let numRow = 5;
+let numCol = 5;
 
-var angle = 0.0;
-var axis = [0, 0, 1];
+var nSegments = 11;
+
+var gl;
 
 var trackingMouse = false;
 var trackballMove = false;
 
-var lastPos = [0, 0, 0];
 var curX, curY;
 var startX, startY;
 
-let angleSldierTemplate = "Push it! -10 to 10. Currently: ";
+const angleSldierTemplate = "Push it! -10 to 10. Currently: ";
+const checkBoxTemplate = "<input type=\"checkbox\" id=\"#checkbox-id\">";
 
 var vertices = [];
 var indexArray = [];
 var controlPoints = []; // temporary 4x4 control points
+var selectedControlPoints = [];
 
 var vBufferId;
-var controlPointsBufferId;
 var vPosition;
 
 var num = 1;
 var fColor;
-var nSegments = 11;
+
 
 var near = 4;
 var far = 20;
@@ -30,7 +32,6 @@ var far = 20;
 var radius = 6.0;
 var theta = 0.0;
 var phi = 1.0;
-var dr = 5.0 * Math.PI / 180.0;
 
 const black = vec4(0.0, 0.0, 0.0, 1.0);
 const blue = vec4(0.0, 0.0, 1.0, 1.0);
@@ -52,16 +53,16 @@ function factorial(n) {
 }
 
 //Reference: https://www.scratchapixel.com/lessons/advanced-rendering/bezier-curve-rendering-utah-teapot
-function evaluateBezierCurve(cPoints, t) {
+function evaluateBezierCurve(selectedCP, t) {
 
     let initialPoint = vec4();
 
-    let numPoints = cPoints.length;
+    let numPoints = selectedCP.length;
     let p = numPoints - 1;
 
     for (let i = 0; i < numPoints; i++) {
         let k = (factorial(p) / (factorial(i) * factorial(p - i))) * Math.pow((1 - t), p - i) * Math.pow((t), i);
-        let newVec4 = vec4(cPoints[i][0] * k, cPoints[i][1] * k, cPoints[i][2] * k, cPoints[i][3]);
+        let newVec4 = vec4(selectedCP[i][0] * k, selectedCP[i][1] * k, selectedCP[i][2] * k, selectedCP[i][3]);
         initialPoint = add(initialPoint, newVec4);
     }
 
@@ -70,31 +71,37 @@ function evaluateBezierCurve(cPoints, t) {
 
 }
 
-function evaluateBezierSurface(cPoints, u, v) {
+function evaluateBezierSurface(u, v) {
     let uCurve = [];
-
-    let numRow = cPoints.length;
-    let numCol = cPoints[0].length;
 
     for (let i = 0; i < numRow; i++) {
         let selectedCP = [];
         for (let j = 0; j < numCol; j++)
-            selectedCP.push(cPoints[i][j]);
+            selectedCP.push(controlPoints[i][j]);
         uCurve.push(evaluateBezierCurve(selectedCP, u));
     }
     return evaluateBezierCurve(uCurve, v);
 }
 
-function addControlPointsX() {
-    const currentXLength = controlPoints[0].length;
-    let newLength = currentXLength + 1;
-
-
-
+function evaluateControlPoints() {
+    for (let i = 0; i < nSegments; i++)
+        for (let j = 0; j < nSegments; j++)
+            vertices.push(evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1)));
 }
 
-function addControlPointsY() {
+function drawCheckboxes() {
 
+    let checkboxDiv = document.getElementById("checkboxGrid");
+    checkboxDiv.innerHTML = "";
+
+    for (let i = 0; i < numCol; i++) {
+        let tempDiv = "<div class='checkboxDiv'>";
+        for (let j = 0; j < numRow; j++)
+            tempDiv += checkBoxTemplate.replace("#checkbox-id", (controlPoints[i][j]));
+        tempDiv += "</div>";
+
+        checkboxDiv.innerHTML = tempDiv + checkboxDiv.innerHTML;
+    }
 }
 
 function assignControlPoints(n) {
@@ -103,14 +110,52 @@ function assignControlPoints(n) {
         [vec4(-1, -0.5, 1, 1), vec4(-0.5, -0.5, 1, 1), vec4(0, -0.5, 1, 1), vec4(0.5, -0.5, 1, 1), vec4(1, -0.5, 1, 1)],
         [vec4(-1, 0, 1, 1), vec4(-0.5, 0, 1, 1), vec4(0, 0, n, 1), vec4(0.5, 0, 1, 1), vec4(1, 0, 1, 1)],
         [vec4(-1, 0.5, 1, 1), vec4(-0.5, 0.5, 1, 1), vec4(0, 0.5, 1, 1), vec4(0.5, 0.5, 1, 1), vec4(1, 0.5, 1, 1)],
-        [vec4(-1, 1, 1, 1), vec4(-0.5, 1, 1, 1), vec4(0, 1, 1, 1),vec4(0.5, 1, 1, 1), vec4(1, 1, 1, 1)]];
+        [vec4(-1, 1, 1, 1), vec4(-0.5, 1, 1, 1), vec4(0, 1, 1, 1), vec4(0.5, 1, 1, 1), vec4(1, 1, 1, 1)]];
 
 }
 
-function evaluateControlPoints() {
-    for (let i = 0; i < nSegments; i++)
-        for (let j = 0; j < nSegments; j++)
-            vertices.push(evaluateBezierSurface(controlPoints, i / (nSegments - 1), j / (nSegments - 1)));
+function addControlPointX() {
+    const currentXLength = numCol;
+    const currentYLength = numRow;
+    const newXIncrement = 2.0 / currentXLength;
+    const yIncrement = 2.0 / (currentYLength - 1);
+
+    let newControlPoints = [];
+
+    for (let y = 0; y < currentYLength; y++) {
+        let temp = [];
+        for (let x = 0; x < currentXLength + 1; x++)
+            temp.push(vec4(-1 + (x * newXIncrement), -1 + (y * yIncrement), 1, 1));
+        newControlPoints.push(temp);
+    }
+
+    controlPoints = newControlPoints;
+
+    numCol++;
+
+    drawCheckboxes();
+}
+
+function addControlPointY() {
+    const currentXLength = numCol;
+    const currentYLength = numRow;
+    const newXIncrement = 2.0 / (currentXLength - 1);
+    const yIncrement = 2.0 / currentYLength;
+
+    let newControlPoints = [];
+
+    for (let y = 0; y < currentYLength + 1; y++) {
+        let temp = [];
+        for (let x = 0; x < currentXLength; x++)
+            temp.push(vec4(-1 + (x * newXIncrement), -1 + (y * yIncrement), 1, 1));
+        newControlPoints.push(temp);
+    }
+
+    controlPoints = newControlPoints;
+
+    numRow++;
+
+    drawCheckboxes();
 }
 
 function changeValue(value) {
@@ -182,9 +227,8 @@ function init() {
 
     for (let j = 1; j <= nSegments * nSegments; j++) {
 
-        if ((j - 1) % nSegments === (nSegments - 1)) {
+        if ((j - 1) % nSegments === (nSegments - 1))
             continue;
-        }
         indexArray.push(j - 1);
         indexArray.push(j);
         indexArray.push(nSegments + j);
@@ -232,6 +276,7 @@ function init() {
         mouseMotion(x, y);
     });
 
+    drawCheckboxes();
     render();
 }
 
@@ -276,19 +321,18 @@ function render() {
     for (let i = 0; i < indexArray.length; i += 4) {
         gl.uniform4fv(fColor, flatten(red));
         gl.drawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_BYTE, i);
-        gl.uniform4fv(fColor, flatten(black));
-        gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i);
+        //gl.uniform4fv(fColor, flatten(black));
+        //gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i);
     }
 
     gl.bufferData(gl.ARRAY_BUFFER, flatten(convert2DInto1D(controlPoints)), gl.DYNAMIC_DRAW);
 
     //for (let i = 0; i < fa.length; i += 4) {
-        gl.uniform4fv(fColor, flatten(blue));
-        gl.drawArrays(gl.POINTS, 0, 25);
-        //gl.uniform4fv(fColor, flatten(black));
-        //gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i);
+    gl.uniform4fv(fColor, flatten(blue));
+    gl.drawArrays(gl.POINTS, 0, controlPoints[0].length * controlPoints.length);
+    //gl.uniform4fv(fColor, flatten(black));
+    //gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i);
     //}
-
 
     requestAnimFrame(render);
 }
