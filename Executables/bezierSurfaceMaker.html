@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-
     <link rel="stylesheet" href="../Source/style/bezier.css">
-
     <script id="vertex-shader" type="x-shader/x-vertex">
 
     attribute  vec4 vPosition;
@@ -15,13 +13,10 @@
     {
 
         gl_Position = projectionMatrix*modelViewMatrix*vPosition;
-    } 
-
+    }
 
     </script>
-
     <script id="fragment-shader" type="x-shader/x-fragment">
-    
     precision mediump float;
     
     uniform vec4 fColor;
@@ -33,13 +28,11 @@
     }
 
     </script>
-
     <script type="text/javascript" src="../Source/webgl-utils.js"></script>
     <script type="text/javascript" src="../Source/initShaders.js"></script>
     <script type="text/javascript" src="../Source/MV.js"></script>
     <script type="text/javascript" src="../Source/w3.js"></script>
     <script type="text/javascript" src="../Source/bezierSurfaceMaker.js"></script>
-
 </head>
 
 <body>
@@ -48,9 +41,12 @@
     Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 
-<div id="slider1">
+<div id="depthSlider">
     <p> Push it! -10 to 10. Currently: 1</p>
-    <input class="slider" id="slide" type="range" min="-10" max="10" step="0.1" value="1" oninput="changeValue(this.value)"/>
+    <input class="slider" id="slide" type="range" min="-10" max="10" step="0.1" value="1"
+           oninput="changeValue(this.value)"/>
+    <input type="button" value="Add_CP_x" onclick="addControlPointX()">
+    <input type="button" value="Add_CP_y" onclick="addControlPointY()">
 </div>
 <br/>
 
