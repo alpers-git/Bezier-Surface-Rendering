@@ -1,7 +1,7 @@
 let numRow = 5;
 let numCol = 5;
 
-var nSegments = 11;
+var nSegments = 15;
 
 var gl;
 var program;
@@ -45,16 +45,15 @@ const up = vec3(0.0, 1.0, 0.0);
 let fovy = 60;
 let aspect = 2;
 
-var lightPosition = vec4(1.0, 1.0, 1.0, 0.0 );
+var lightPosition = vec4(0.0, 1.0, 1.0, 0.0 );
 var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
 var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
 var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
-var materialDiffuse = vec4( 0.0, 0.0, 1.0, 1.0 );
+var materialAmbient = vec4( 0.0, 0.0, 1.0, 1.0 );
+var materialDiffuse = vec4( 0.0, 0.8, 1.0, 1.0 );
 var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
-var materialShininess = 20.0;
-
+var materialShininess = 200.0;
 var ctm;
 var ambientColor, diffuseColor, specularColor;
 
@@ -102,12 +101,12 @@ function evaluateControlPoints() {
     for (let i = 0; i < nSegments; i++)
         for (let j = 0; j < nSegments; j++)
         {
-            var x=evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1))
+            let x=evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1))
             vertices.push(x);
-            //normals.push(vec4(x[0], x[1], x[2], 0));
+            normals.push(vec4(x[0], x[1], x[2], 0));
         }
 
-    calculateNormals();
+    //calculateNormals();
             
 }
 
@@ -168,7 +167,7 @@ function calculateNormals()
             nt = add(nt, n4);
             nt = normalize(nt, false);
         
-            normals.push(vec4(-nt[0], -nt[1], -nt[2], 0));
+            normals.push(vec4(-nt[0], -nt[1], -nt[2], 1));
         }
     }
 
@@ -460,14 +459,12 @@ function render() {
             "shininess"),materialShininess );
         gl.drawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_BYTE, i);
 
-        //gl.uniform1f(wireframe, flatten(flag));
-        //gl.uniform4fv(ambientColor, flatten(black));
         gl.uniform4fv( gl.getUniformLocation(program, 
             "ambientProduct"),flatten(black) );
          gl.uniform4fv( gl.getUniformLocation(program, 
             "diffuseProduct"),flatten(black) );
-         /*gl.uniform4fv( gl.getUniformLocation(program, 
-            "specularProduct"),flatten(black) );*/	
+         gl.uniform4fv( gl.getUniformLocation(program, 
+            "specularProduct"),flatten(black) );	
          gl.uniform4fv( gl.getUniformLocation(program, 
             "lightPosition"),flatten(vec4(black)));
          /*gl.uniform1f( gl.getUniformLocation(program, 
