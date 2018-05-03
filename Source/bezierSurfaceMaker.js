@@ -45,15 +45,15 @@ const up = vec3(0.0, 1.0, 0.0);
 let fovy = 60;
 let aspect = 2;
 
-var lightPosition = vec4(0.0, 1.0, 1.0, 0.0 );
+var lightPosition = vec4(-5.0, 0.0, 1.0, 1.0 );
 var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
 var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
 var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-var materialAmbient = vec4( 0.0, 0.0, 1.0, 1.0 );
-var materialDiffuse = vec4( 0.0, 0.8, 1.0, 1.0 );
+var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
+var materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0 );
 var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
-var materialShininess = 200.0;
+var materialShininess = 10000.0;
 var ctm;
 var ambientColor, diffuseColor, specularColor;
 
@@ -103,10 +103,10 @@ function evaluateControlPoints() {
         {
             let x=evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1))
             vertices.push(x);
-            normals.push(vec4(x[0], x[1], x[2], 0));
+            //normals.push(vec4(x[0], x[1], x[2], 1));
         }
 
-    //calculateNormals();
+    calculateNormals();
             
 }
 
@@ -167,7 +167,7 @@ function calculateNormals()
             nt = add(nt, n4);
             nt = normalize(nt, false);
         
-            normals.push(vec4(-nt[0], -nt[1], -nt[2], 1));
+            normals.push(vec4(-nt[0], -nt[1], -nt[2], 0));
         }
     }
 
@@ -306,7 +306,7 @@ function init() {
     if (!gl) alert("WebGL isn't available");
 
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
     ambientProduct = mult(lightAmbient, materialAmbient);
     diffuseProduct = mult(lightDiffuse, materialDiffuse);
@@ -413,7 +413,7 @@ var a = 1;
 
 //var x;
 function render() {
-    //theta += 0.01;
+    //theta += 0.03;
     a++;
 
     vertices = [];
@@ -466,20 +466,23 @@ function render() {
          gl.uniform4fv( gl.getUniformLocation(program, 
             "specularProduct"),flatten(black) );	
          gl.uniform4fv( gl.getUniformLocation(program, 
-            "lightPosition"),flatten(vec4(black)));
-         /*gl.uniform1f( gl.getUniformLocation(program, 
-            "shininess"),materialShininess );*/
+            "lightPosition"),flatten(black));
         gl.drawElements(gl.LINE_LOOP, 4, gl.UNSIGNED_BYTE, i);
     }
 
     gl.bufferData(gl.ARRAY_BUFFER, flatten(convert2DInto1D(controlPoints)), gl.DYNAMIC_DRAW);
 
-    //for (let i = 0; i < fa.length; i += 4) {
-    gl.uniform4fv(fColor, flatten(blue));
-    gl.drawArrays(gl.POINTS, 0, controlPoints[0].length * controlPoints.length);
-    //gl.uniform4fv(fColor, flatten(black));
-    //gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i);
-    //}
+    gl.uniform4fv( gl.getUniformLocation(program, 
+        "ambientProduct"),flatten(blue) );
+     gl.uniform4fv( gl.getUniformLocation(program, 
+        "diffuseProduct"),flatten(blue) );
+     gl.uniform4fv( gl.getUniformLocation(program, 
+        "specularProduct"),flatten(blue) );	
+     gl.uniform4fv( gl.getUniformLocation(program, 
+        "lightPosition"),flatten(blue));
+
+    //for(let i = 0; i < controlPoints[0].length * controlPoints.length; i++)
+        gl.drawArrays(gl.POINTS, 0, controlPoints[0].length * controlPoints.length);
 
     requestAnimFrame(render);
 }
