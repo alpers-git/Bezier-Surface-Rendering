@@ -28,7 +28,7 @@ var num = 1;
 var fColor;
 
 
-var near = 4;
+var near = 1;
 var far = 20;
 
 var radius = 6.0;
@@ -45,15 +45,15 @@ const up = vec3(0.0, 1.0, 0.0);
 let fovy = 60;
 let aspect = 2;
 
-var lightPosition = vec4(-5.0, 0.0, 1.0, 1.0 );
+var lightPosition = vec4(1.0, 1.0, 1.0, 0.0 );
 var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
 var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
 var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
-var materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0 );
+var materialAmbient = vec4( 1.0, 0.0, 0.0, 1.0 );
+var materialDiffuse = vec4( 1.0, 0.3, 0.0, 1.0 );
 var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
-var materialShininess = 10000.0;
+var materialShininess = 30.0;
 var ctm;
 var ambientColor, diffuseColor, specularColor;
 
@@ -111,7 +111,6 @@ function evaluateControlPoints() {
 }
 
 //Calculates normals for vertices and pushes them to normals array
-//Seems to be misfiring :((((((
 function calculateNormals()
 {
     var n1;
@@ -200,11 +199,11 @@ function drawCheckboxes() {
 
 function assignControlPoints(n) {
 
-    controlPoints = [[vec4(-1, -1, 1, 1), vec4(-0.5, -1, 1, 1), vec4(0, -1, 1, 1), vec4(0.5, -1, 1, 1), vec4(1, -1, 1, 1)],
-        [vec4(-1, -0.5, 1, 1), vec4(-0.5, -0.5, 1, 1), vec4(0, -0.5, 1, 1), vec4(0.5, -0.5, 1, 1), vec4(1, -0.5, 1, 1)],
-        [vec4(-1, 0, 1, 1), vec4(-0.5, 0, 1, 1), vec4(0, 0, n, 1), vec4(0.5, 0, 1, 1), vec4(1, 0, 1, 1)],
-        [vec4(-1, 0.5, 1, 1), vec4(-0.5, 0.5, 1, 1), vec4(0, 0.5, 1, 1), vec4(0.5, 0.5, 1, 1), vec4(1, 0.5, 1, 1)],
-        [vec4(-1, 1, 1, 1), vec4(-0.5, 1, 1, 1), vec4(0, 1, 1, 1), vec4(0.5, 1, 1, 1), vec4(1, 1, 1, 1)]];
+    controlPoints = [[vec4(-1, -1, -n, 1), vec4(-0.5, -1, -n, 1), vec4(0, -1, -n, 1), vec4(0.5, -1, -n, 1), vec4(1, -1, -n, 1)],
+        [vec4(-1, -0.5, -n, 1), vec4(-0.5, -0.5, 1, 1), vec4(0, -0.5, 1, 1), vec4(0.5, -0.5, 1, 1), vec4(1, -0.5, -n, 1)],
+        [vec4(-1, 0, -n, 1), vec4(-0.5, 0, 1, 1), vec4(0, 0, n, 1), vec4(0.5, 0, 1, 1), vec4(1, 0, -n, 1)],
+        [vec4(-1, 0.5, -n, 1), vec4(-0.5, 0.5, 1, 1), vec4(0, 0.5, 1, 1), vec4(0.5, 0.5, 1, 1), vec4(1, 0.5, -n, 1)],
+        [vec4(-1, 1, -n, 1), vec4(-0.5, 1, -n, 1), vec4(0, 1, -n, 1), vec4(0.5, 1, -n, 1), vec4(1, 1, -n, 1)]];
 
 }
 
