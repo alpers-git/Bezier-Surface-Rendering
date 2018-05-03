@@ -4,6 +4,7 @@ let numCol = 5;
 var nSegments = 11;
 
 var gl;
+var program;
 
 var trackingMouse = false;
 var trackballMove = false;
@@ -44,13 +45,13 @@ const up = vec3(0.0, 1.0, 0.0);
 let fovy = 60;
 let aspect = 2;
 
-var lightPosition = vec4(0.0, 1.0, 1.0, 0.0 );
+var lightPosition = vec4(1.0, 1.0, 1.0, 0.0 );
 var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
 var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
 var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-var materialAmbient = vec4( 0.0, 0.0, 1.0, 1.0 );
-var materialDiffuse = vec4( 0.2, 0.0, 1.0, 1.0 );
+var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
+var materialDiffuse = vec4( 0.0, 0.0, 1.0, 1.0 );
 var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialShininess = 20.0;
 
@@ -103,10 +104,10 @@ function evaluateControlPoints() {
         {
             var x=evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1))
             vertices.push(x);
-            normals.push(vec4(x[0], x[1], x[2], 0));
+            //normals.push(vec4(x[0], x[1], x[2], 0));
         }
 
-    //calculateNormals();
+    calculateNormals();
             
 }
 
@@ -167,7 +168,7 @@ function calculateNormals()
             nt = add(nt, n4);
             nt = normalize(nt, false);
         
-            normals.push(nt);
+            normals.push(vec4(-nt[0], -nt[1], -nt[2], 0));
         }
     }
 
@@ -334,7 +335,7 @@ function init() {
         indexArray.push(nSegments + j - 1);
     }
 
-    let program = initShaders(gl, "vertex-shader", "fragment-shader");
+    program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
     var nBuffer = gl.createBuffer();
@@ -446,12 +447,32 @@ function render() {
     // draw each quad as two filled red triangles
     // and then as two black line loops
     for (let i = 0; i < indexArray.length; i += 4) {
-        gl.uniform4fv(fColor, flatten(red));
+        //gl.uniform4fv(fColor, flatten(red));
+        gl.uniform4fv( gl.getUniformLocation(program, 
+            "ambientProduct"),flatten(ambientProduct) );
+         gl.uniform4fv( gl.getUniformLocation(program, 
+            "diffuseProduct"),flatten(diffuseProduct) );
+         gl.uniform4fv( gl.getUniformLocation(program, 
+            "specularProduct"),flatten(specularProduct) );	
+         gl.uniform4fv( gl.getUniformLocation(program, 
+            "lightPosition"),flatten(lightPosition) );
+         gl.uniform1f( gl.getUniformLocation(program, 
+            "shininess"),materialShininess );
         gl.drawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_BYTE, i);
 
         //gl.uniform1f(wireframe, flatten(flag));
-        gl.uniform4fv(fColor, flatten(black));
-        gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i);
+        //gl.uniform4fv(ambientColor, flatten(black));
+        gl.uniform4fv( gl.getUniformLocation(program, 
+            "ambientProduct"),flatten(black) );
+         gl.uniform4fv( gl.getUniformLocation(program, 
+            "diffuseProduct"),flatten(black) );
+         /*gl.uniform4fv( gl.getUniformLocation(program, 
+            "specularProduct"),flatten(black) );*/	
+         gl.uniform4fv( gl.getUniformLocation(program, 
+            "lightPosition"),flatten(vec4(black)));
+         /*gl.uniform1f( gl.getUniformLocation(program, 
+            "shininess"),materialShininess );*/
+        gl.drawElements(gl.LINE_LOOP, 4, gl.UNSIGNED_BYTE, i);
     }
 
     gl.bufferData(gl.ARRAY_BUFFER, flatten(convert2DInto1D(controlPoints)), gl.DYNAMIC_DRAW);
