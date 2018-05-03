@@ -18,7 +18,7 @@ const checkBoxTemplate = "<input type=\"checkbox\" id=\"#checkbox-id\">";
 var vertices = [];
 var normals = [];
 var indexArray = [];
-var controlPoints = []; // temporary 4x4 control points
+var controlPoints = []; // temporary 5x5 control points
 var selectedControlPoints = [];
 
 var vBufferId;
@@ -26,7 +26,9 @@ var vPosition;
 
 var num = 1;
 var fColor;
+var flag;
 
+var renderW;
 
 var near = 1;
 var far = 20;
@@ -113,10 +115,10 @@ function evaluateControlPoints() {
 //Calculates normals for vertices and pushes them to normals array
 function calculateNormals()
 {
-    var n1;
-    var n2;
-    var n3;
-    var n4;
+    let n1;
+    let n2;
+    let n3;
+    let n4;
 
     //console.log("a");
 
@@ -124,7 +126,7 @@ function calculateNormals()
     {
         for (let i =0; i< nSegments; i++)
         {
-            var index = i + nSegments*j;
+            let index = i + nSegments*j;
             if((j+1) < (nSegments) && (i+1) < (nSegments))
             {
                 n1 = calculateNormal(vertices[nSegments+index], vertices[index+1], vertices[index]);
@@ -161,7 +163,7 @@ function calculateNormals()
             {
                 n4 = vec4();
             }
-            var nt= add(n1, n2);
+            let nt= add(n1, n2);
             nt = add(nt, n3);
             nt = add(nt, n4);
             nt = normalize(nt, false);
@@ -349,6 +351,8 @@ function init() {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indexArray), gl.DYNAMIC_DRAW);
     
     fColor = gl.getUniformLocation(program, "fColor");
+    flag = gl.getUniformLocation(program, "flag");
+    //gl.uniform1f (flag, 1.0);
     
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
     projectionMatrixLoc = gl.getUniformLocation(program, "projectionMatrix");
@@ -407,7 +411,19 @@ function convert2DInto1D(arr) {
     return output;
 }
 
-//var indexBuffer
+function switchShading(box)
+{
+    if(box.checked == true)
+        gl.uniform1i (flag, 1.0);
+    else
+        gl.uniform1i (flag, 0.0);
+}
+
+function toggleWireframe(box)
+{
+    renderW = box.checked;
+}
+
 var a = 1;
 
 //var x;
@@ -458,15 +474,16 @@ function render() {
             "shininess"),materialShininess );
         gl.drawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_BYTE, i);
 
-        gl.uniform4fv( gl.getUniformLocation(program, 
-            "ambientProduct"),flatten(black) );
-         gl.uniform4fv( gl.getUniformLocation(program, 
-            "diffuseProduct"),flatten(black) );
-         gl.uniform4fv( gl.getUniformLocation(program, 
-            "specularProduct"),flatten(black) );	
-         gl.uniform4fv( gl.getUniformLocation(program, 
-            "lightPosition"),flatten(black));
-        gl.drawElements(gl.LINE_LOOP, 4, gl.UNSIGNED_BYTE, i);
+        if(renderW)
+        {
+            gl.uniform4fv( gl.getUniformLocation(program, 
+                "ambientProduct"),flatten(black) );
+             gl.uniform4fv( gl.getUniformLocation(program, 
+                "diffuseProduct"),flatten(black) );
+             gl.uniform4fv( gl.getUniformLocation(program, 
+                "specularProduct"),flatten(black) );
+            gl.drawElements(gl.LINE_LOOP, 4, gl.UNSIGNED_BYTE, i);
+        }
     }
 
     gl.bufferData(gl.ARRAY_BUFFER, flatten(convert2DInto1D(controlPoints)), gl.DYNAMIC_DRAW);
