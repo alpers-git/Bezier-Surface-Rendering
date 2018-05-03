@@ -15,6 +15,7 @@ const angleSldierTemplate = "Push it! -10 to 10. Currently: ";
 const checkBoxTemplate = "<input type=\"checkbox\" id=\"#checkbox-id\">";
 
 var vertices = [];
+var normals = [];
 var indexArray = [];
 var controlPoints = []; // temporary 4x4 control points
 var selectedControlPoints = [];
@@ -42,6 +43,19 @@ const up = vec3(0.0, 1.0, 0.0);
 
 let fovy = 60;
 let aspect = 2;
+
+var lightPosition = vec4(0.0, 1.0, 1.0, 0.0 );
+var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
+var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
+var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
+
+var materialAmbient = vec4( 0.0, 0.0, 1.0, 1.0 );
+var materialDiffuse = vec4( 0.2, 0.0, 1.0, 1.0 );
+var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
+var materialShininess = 20.0;
+
+var ctm;
+var ambientColor, diffuseColor, specularColor;
 
 let modelViewMatrix, projectionMatrix;
 let modelViewMatrixLoc, projectionMatrixLoc;
@@ -86,7 +100,87 @@ function evaluateBezierSurface(u, v) {
 function evaluateControlPoints() {
     for (let i = 0; i < nSegments; i++)
         for (let j = 0; j < nSegments; j++)
-            vertices.push(evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1)));
+        {
+            var x=evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1))
+            vertices.push(x);
+            normals.push(vec4(x[0], x[1], x[2], 0));
+        }
+
+    //calculateNormals();
+            
+}
+
+//Calculates normals for vertices and pushes them to normals array
+//Seems to be misfiring :((((((
+function calculateNormals()
+{
+    var n1;
+    var n2;
+    var n3;
+    var n4;
+
+    //console.log("a");
+
+    for (let j =0; j< nSegments; j++)
+    {
+        for (let i =0; i< nSegments; i++)
+        {
+            var index = i + nSegments*j;
+            if((j+1) < (nSegments) && (i+1) < (nSegments))
+            {
+                n1 = calculateNormal(vertices[nSegments+index], vertices[index+1], vertices[index]);
+                //console.log("b");
+            }
+            else
+            {
+                n1 = vec4();
+                //console.log("c");
+            }
+            if((j-1) >= 0 && (i+1) < (nSegments))
+            {
+                n2 = calculateNormal(vertices[index], vertices[index+1], vertices[-nSegments+index+1]);
+            }
+            else
+            {
+                n2 = vec4();
+            }
+    
+            if((j-1) >= 0 && (i-1) >= 0 )
+            {
+                n3 = calculateNormal(vertices[index], vertices[index-nSegments], vertices[-nSegments+index-1]);
+            }
+            else
+            {
+                n3 = vec4();
+            }
+    
+            if((j+1) < nSegments && (i-1) >= 0)
+            {
+                n4 = calculateNormal(vertices[index], vertices[index+nSegments-1], vertices[nSegments+index]);
+            }
+            else
+            {
+                n4 = vec4();
+            }
+            var nt= add(n1, n2);
+            nt = add(nt, n3);
+            nt = add(nt, n4);
+            nt = normalize(nt, false);
+        
+            normals.push(nt);
+        }
+    }
+
+    //console.log(normals);
+}
+
+function calculateNormal(a,b,c)
+{
+    var t1 = subtract(b, a);
+    var t2 = subtract(c, a);
+    var normal = normalize(cross(t2, t1));
+    normal = vec4(normal);
+    return normal;
 }
 
 function drawCheckboxes() {
@@ -214,6 +308,11 @@ function init() {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 0.0);
 
+    ambientProduct = mult(lightAmbient, materialAmbient);
+    diffuseProduct = mult(lightDiffuse, materialDiffuse);
+    specularProduct = mult(lightSpecular, materialSpecular);
+
+
     // enable depth testing and polygon offset
     // so lines will be in front of filled triangles
     gl.enable(gl.DEPTH_TEST);
@@ -238,19 +337,28 @@ function init() {
     let program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
+    var nBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, nBuffer);
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW );
+
+    var vNormal = gl.getAttribLocation( program, "vNormal" );
+    gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vNormal);
+    
     let iBufferId = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBufferId);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indexArray), gl.DYNAMIC_DRAW);
-
+    
     fColor = gl.getUniformLocation(program, "fColor");
-
+    
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
     projectionMatrixLoc = gl.getUniformLocation(program, "projectionMatrix");
-
+    normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
+    
     vBufferId = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vBufferId);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.DYNAMIC_DRAW);
-
+    
     vPosition = gl.getAttribLocation(program, "vPosition");
     gl.enableVertexAttribArray(vPosition);
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
@@ -276,6 +384,17 @@ function init() {
         mouseMotion(x, y);
     });
 
+    gl.uniform4fv( gl.getUniformLocation(program, 
+        "ambientProduct"),flatten(ambientProduct) );
+     gl.uniform4fv( gl.getUniformLocation(program, 
+        "diffuseProduct"),flatten(diffuseProduct) );
+     gl.uniform4fv( gl.getUniformLocation(program, 
+        "specularProduct"),flatten(specularProduct) );	
+     gl.uniform4fv( gl.getUniformLocation(program, 
+        "lightPosition"),flatten(lightPosition) );
+     gl.uniform1f( gl.getUniformLocation(program, 
+        "shininess"),materialShininess );
+
     drawCheckboxes();
     render();
 }
@@ -298,6 +417,7 @@ function render() {
     a++;
 
     vertices = [];
+    normals =[];
 
     evaluateControlPoints();
 
@@ -313,16 +433,25 @@ function render() {
     modelViewMatrix = lookAt(eye, at, up);
     projectionMatrix = perspective(fovy, aspect, near, far);
 
+    normalMatrix = [
+        vec3(modelViewMatrix[0][0], modelViewMatrix[0][1], modelViewMatrix[0][2]),
+        vec3(modelViewMatrix[1][0], modelViewMatrix[1][1], modelViewMatrix[1][2]),
+        vec3(modelViewMatrix[2][0], modelViewMatrix[2][1], modelViewMatrix[2][2])
+    ];
+
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
+    gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix) );
 
     // draw each quad as two filled red triangles
     // and then as two black line loops
     for (let i = 0; i < indexArray.length; i += 4) {
         gl.uniform4fv(fColor, flatten(red));
         gl.drawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_BYTE, i);
-        //gl.uniform4fv(fColor, flatten(black));
-        //gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i);
+
+        //gl.uniform1f(wireframe, flatten(flag));
+        gl.uniform4fv(fColor, flatten(black));
+        gl.drawElements(gl.LINE_LOOP, 3, gl.UNSIGNED_BYTE, i);
     }
 
     gl.bufferData(gl.ARRAY_BUFFER, flatten(convert2DInto1D(controlPoints)), gl.DYNAMIC_DRAW);
