@@ -1,6 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <style>
+            .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            }
+
+            .switch input {display:none;}
+
+            .slider2 {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: red;
+            -webkit-transition: .4s;
+            transition: .3s;
+            }
+
+            .slider2:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            }
+
+            input:checked + .slider2 {
+            background-color: #2196F3;
+            }
+
+            input:focus + .slider2 {
+            box-shadow: 0 0 1px #2196F3;
+            }
+
+            input:checked + .slider2:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+            }
+
+    </style>
     <link rel="stylesheet" href="../Source/style/bezier.css">
     <script id="vertex-shader" type="x-shader/x-vertex">
 
@@ -10,6 +59,9 @@
         attribute vec4 vNormal;
         
         varying vec4 fColor;
+        varying vec3 N, L, E;
+
+        uniform bool flag;
         
         uniform vec4 ambientProduct, diffuseProduct, specularProduct;
         uniform mat4 modelViewMatrix;
@@ -19,8 +71,7 @@
         uniform mat3 normalMatrix;
         
         
-        void
-        main()
+        void main()
         {
             
             // pos is vertex position in eye coordinates
@@ -29,7 +80,6 @@
             
             // vector from vertex position to light source
             
-            vec3 L;
             
             // check for directional light
             
@@ -39,51 +89,81 @@
             // Because the eye point the is at the orgin
             // the vector from the vertex position to the eye is
                 
-            vec3 E = -normalize( pos );
+            E = -normalize( pos );
             
             // halfway vector
             
             vec3 H = normalize( L + E );
-        
+            
             // Transform vertex normal into eye coordinates
             
-            vec3 N = normalize( normalMatrix*vNormal.xyz);
-        
-        
-            // Compute terms in the illumination equation
-            vec4 ambient = ambientProduct;
-        
-            float Kd = max( dot(L, N), 0.0 );
-            vec4  diffuse = Kd*diffuseProduct;
-        
-            float Ks = pow( max(dot(N, H), 0.0), shininess );
-            vec4  specular = Ks * specularProduct;
+            N = normalize( normalMatrix*vNormal.xyz);
             
-            if( dot(L, N) < 0.0 ) {
-            specular = vec4(0.0, 0.0, 0.0, 1.0);
-            } 
-        
+            if(flag)
+            {
+
+                // Compute terms in the illumination equation
+                vec4 ambient = ambientProduct;
+            
+                float Kd = max( dot(L, N), 0.0 );
+                vec4  diffuse = Kd*diffuseProduct;
+            
+                float Ks = pow( max(dot(N, H), 0.0), shininess );
+                vec4  specular = Ks * specularProduct;
+                
+                if( dot(L, N) < 0.0 ) {
+                specular = vec4(0.0, 0.0, 0.0, 1.0);
+                } 
+            
+                
+                fColor = ambient + diffuse + specular;
+                
+                fColor.a = 1.0;
+            }
             gl_Position = projectionMatrix * modelViewMatrix * vPosition;
-            
-            //if()
-            fColor = ambient + diffuse + specular;
         
-            fColor.a = 1.0;
         }
         </script>
         
         <script id="fragment-shader" type="x-shader/x-fragment">
         
-        precision mediump float;
+        precision highp float;
         
         varying vec4 fColor;
+        uniform bool flag;
+
+        uniform vec4 ambientProduct;
+        uniform vec4 diffuseProduct;
+        uniform vec4 specularProduct;
+        uniform float shininess;
+        varying vec3 N, L, E;
         
-        void
-        main()
+        void main()
         {
+            if(flag)
+            {
+                gl_FragColor = fColor;
+            }
+            else
+            {
+                vec4 f2Color;
         
-            gl_FragColor = fColor;
+                vec3 H = normalize( L + E );
+                vec4 ambient = ambientProduct;
         
+                float Kd = max( dot(L, N), 0.0 );
+                vec4  diffuse = Kd*diffuseProduct;
+        
+                float Ks = pow( max(dot(N, H), 0.0), shininess );
+                vec4  specular = Ks * specularProduct;
+                
+                if( dot(L, N) < 0.0 ) specular = vec4(0.0, 0.0, 0.0, 1.0);
+        
+                f2Color = ambient + diffuse +specular;
+                f2Color.a = 1.0;
+                gl_FragColor = f2Color;
+            }
+            
         }
 
     </script>
@@ -108,6 +188,20 @@
     <input type="button" value="Add_CP_y" onclick="addControlPointY()">
 </div>
 
+<p>Phong Shading / Gouraud Shading</p>
+<div>
+    <label class="switch">
+            <input type="checkbox" checked onclick = "switchShading(this)">
+            <span class="slider2"></span>
+    </label>
+<br>
+<p>Toggle Wireframe</p>
+    <label class="switch">
+            <input type="checkbox" checked onclick = "toggleWireframe(this)">
+            <span class="slider2"></span>
+    </label>
+</div>
+<br>
 <div id="checkboxGrid">
 </div>
 <br/>
