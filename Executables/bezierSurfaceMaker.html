@@ -118,9 +118,10 @@
                 
                 fColor = ambient + diffuse + specular;
                 
-                fColor.a = 1.0;
+                //fColor.a = 1.0;
             }
             gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+            gl_PointSize = 10.0;
         
         }
         </script>
@@ -160,7 +161,7 @@
                 if( dot(L, N) < 0.0 ) specular = vec4(0.0, 0.0, 0.0, 1.0);
         
                 f2Color = ambient + diffuse +specular;
-                f2Color.a = 1.0;
+                //f2Color.a = 1.0;
                 gl_FragColor = f2Color;
             }
             
