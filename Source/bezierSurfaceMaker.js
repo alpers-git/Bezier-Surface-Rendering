@@ -24,7 +24,7 @@ var selectedControlPoints = [];
 var vBufferId;
 var vPosition;
 
-var num = 1;
+var num = 0;
 var fColor;
 var flag;
 
@@ -497,8 +497,10 @@ function render() {
      gl.uniform4fv( gl.getUniformLocation(program, 
         "lightPosition"),flatten(blue));
 
-    //for(let i = 0; i < controlPoints[0].length * controlPoints.length; i++)
-        gl.drawArrays(gl.POINTS, 0, controlPoints[0].length * controlPoints.length);
+    for(let i = 0; i < controlPoints[0].length * controlPoints.length; i++)
+    {
+        gl.drawArrays(gl.POINTS, i, 1);
+    }
 
     requestAnimFrame(render);
 }
