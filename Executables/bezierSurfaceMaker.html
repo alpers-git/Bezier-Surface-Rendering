@@ -58,8 +58,14 @@
         attribute vec4 vPosition;
         attribute vec4 vNormal;
         
+        attribute  vec2 vTexCoord;
+        
         varying vec4 fColor;
         varying vec3 N, L, E;
+
+        varying vec2 fTexCoord;
+
+        varying float ldistance;
 
         uniform bool flag;
         
@@ -71,8 +77,10 @@
         uniform mat3 normalMatrix;
         
         
+        
         void main()
         {
+            ldistance = distance(lightPosition.xyz, vPosition.xyz);
             
             // pos is vertex position in eye coordinates
             
@@ -117,9 +125,9 @@
             
                 
                 fColor = ambient + diffuse + specular;
-                
-                //fColor.a = 1.0;
+                fColor.a = 1.0;
             }
+            fTexCoord = vTexCoord;
             gl_Position = projectionMatrix * modelViewMatrix * vPosition;
             gl_PointSize = 10.0;
         
@@ -131,7 +139,12 @@
         precision highp float;
         
         varying vec4 fColor;
+        varying  vec2 fTexCoord;
+        varying float ldistance;
+
+        uniform sampler2D texture;
         uniform bool flag;
+        
 
         uniform vec4 ambientProduct;
         uniform vec4 diffuseProduct;
@@ -141,9 +154,11 @@
         
         void main()
         {
+            float fatt = 1.0/(500.0 + 5000.0*ldistance + 500.0*ldistance* ldistance);
             if(flag)
             {
-                gl_FragColor = fColor;
+                fColor * fatt;
+                gl_FragColor = fColor * texture2D( texture, fTexCoord );
             }
             else
             {
@@ -161,8 +176,10 @@
                 if( dot(L, N) < 0.0 ) specular = vec4(0.0, 0.0, 0.0, 1.0);
         
                 f2Color = ambient + diffuse +specular;
-                //f2Color.a = 1.0;
-                gl_FragColor = f2Color;
+                f2Color.a = 1.0;
+                f2Color * fatt;
+
+                gl_FragColor = f2Color* texture2D( texture, fTexCoord );
             }
             
         }
