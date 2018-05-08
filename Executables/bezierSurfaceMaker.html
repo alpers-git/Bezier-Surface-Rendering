@@ -2,16 +2,18 @@
 <html>
 <head>
     <style>
-            .switch {
+        .switch {
             position: relative;
             display: inline-block;
             width: 60px;
             height: 34px;
-            }
+        }
 
-            .switch input {display:none;}
+        .switch input {
+            display: none;
+        }
 
-            .slider2 {
+        .slider2 {
             position: absolute;
             cursor: pointer;
             top: 0;
@@ -21,9 +23,9 @@
             background-color: red;
             -webkit-transition: .4s;
             transition: .3s;
-            }
+        }
 
-            .slider2:before {
+        .slider2:before {
             position: absolute;
             content: "";
             height: 26px;
@@ -33,125 +35,123 @@
             background-color: white;
             -webkit-transition: .4s;
             transition: .4s;
-            }
+        }
 
-            input:checked + .slider2 {
+        input:checked + .slider2 {
             background-color: #2196F3;
-            }
+        }
 
-            input:focus + .slider2 {
+        input:focus + .slider2 {
             box-shadow: 0 0 1px #2196F3;
-            }
+        }
 
-            input:checked + .slider2:before {
+        input:checked + .slider2:before {
             -webkit-transform: translateX(26px);
             -ms-transform: translateX(26px);
             transform: translateX(26px);
-            }
-
+        }
     </style>
     <link rel="stylesheet" href="../Source/style/bezier.css">
     <script id="vertex-shader" type="x-shader/x-vertex">
 
         // assume both position and normal are in homogeneous form
-
         attribute vec4 vPosition;
         attribute vec4 vNormal;
-        
+
         attribute  vec2 vTexCoord;
-        
+
         varying vec4 fColor;
         varying vec3 N, L, E;
-
         varying vec2 fTexCoord;
-
         varying float ldistance;
-
         uniform bool flag;
-        
+
         uniform vec4 ambientProduct, diffuseProduct, specularProduct;
         uniform mat4 modelViewMatrix;
         uniform mat4 projectionMatrix;
         uniform vec4 lightPosition;
         uniform float shininess;
         uniform mat3 normalMatrix;
-        
-        
-        
+
+        uniform mat4 r;
+
         void main()
         {
+
+
             ldistance = distance(lightPosition.xyz, vPosition.xyz);
-            
+
             // pos is vertex position in eye coordinates
-            
+
             vec3 pos = (modelViewMatrix * vPosition).xyz;
-            
+
             // vector from vertex position to light source
-            
-            
             // check for directional light
-            
-            if(lightPosition.w == 0.0) L = normalize(lightPosition.xyz);
-            else L = normalize( lightPosition.xyz - pos );
-        
+
+            if(lightPosition.w == 0.0)
+                L = normalize(lightPosition.xyz);
+            else
+                L = normalize( lightPosition.xyz - pos );
+
             // Because the eye point the is at the orgin
             // the vector from the vertex position to the eye is
-                
-            E = -normalize( pos );
-            
+
+            E = -normalize(pos);
+
             // halfway vector
-            
+
             vec3 H = normalize( L + E );
-            
+
             // Transform vertex normal into eye coordinates
-            
+
             N = normalize( normalMatrix*vNormal.xyz);
-            
+
             if(flag)
             {
-
                 // Compute terms in the illumination equation
                 vec4 ambient = ambientProduct;
-            
+
                 float Kd = max( dot(L, N), 0.0 );
                 vec4  diffuse = Kd*diffuseProduct;
-            
+
                 float Ks = pow( max(dot(N, H), 0.0), shininess );
                 vec4  specular = Ks * specularProduct;
-                
+
                 if( dot(L, N) < 0.0 ) {
-                specular = vec4(0.0, 0.0, 0.0, 1.0);
-                } 
-            
-                
+                    specular = vec4(0.0, 0.0, 0.0, 1.0);
+                }
+
+
                 fColor = ambient + diffuse + specular;
                 fColor.a = 1.0;
             }
             fTexCoord = vTexCoord;
-            gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+            //gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+
+            gl_Position = projectionMatrix * modelViewMatrix * r * vPosition;
+
             gl_PointSize = 10.0;
-        
+
         }
-        </script>
-        
-        <script id="fragment-shader" type="x-shader/x-fragment">
-        
+
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+
         precision highp float;
-        
+
         varying vec4 fColor;
         varying  vec2 fTexCoord;
         varying float ldistance;
-
         uniform sampler2D texture;
         uniform bool flag;
-        
 
         uniform vec4 ambientProduct;
         uniform vec4 diffuseProduct;
         uniform vec4 specularProduct;
         uniform float shininess;
         varying vec3 N, L, E;
-        
+
         void main()
         {
             float fatt = 1.0/(500.0 + 5000.0*ldistance + 500.0*ldistance* ldistance);
@@ -163,25 +163,24 @@
             else
             {
                 vec4 f2Color;
-        
+
                 vec3 H = normalize( L + E );
                 vec4 ambient = ambientProduct;
-        
+
                 float Kd = max( dot(L, N), 0.0 );
                 vec4  diffuse = Kd*diffuseProduct;
-        
+
                 float Ks = pow( max(dot(N, H), 0.0), shininess );
                 vec4  specular = Ks * specularProduct;
-                
+
                 if( dot(L, N) < 0.0 ) specular = vec4(0.0, 0.0, 0.0, 1.0);
-        
+
                 f2Color = ambient + diffuse +specular;
                 f2Color.a = 1.0;
                 f2Color * fatt;
-
                 gl_FragColor = f2Color* texture2D( texture, fTexCoord );
             }
-            
+
         }
 
     </script>
@@ -202,27 +201,39 @@
     <p> Push it! -10 to 10. Currently: 1</p>
     <input class="slider" id="slide" type="range" min="-10" max="10" step="0.1" value="1"
            oninput="changeValue(this.value)"/>
+
+
+
     <input type="button" value="Add_CP_x" onclick="addControlPointX()">
     <input type="button" value="Add_CP_y" onclick="addControlPointY()">
+</div>
+
+<div id="rotationSliders">
+    <p>X -90 to 90</p>
+    <input class="slider" id="xAngleSlider" type="range" min="-90" max="90" step="1" value="0" oninput="changeAngleX(this.value)"/>
+
+    <p>Y -90 to 90</p>
+    <input class="slider" id="yAngleSlider" type="range" min="-90" max="90" step="1" value="0" oninput="changeAngleY(this.value)"/>
 </div>
 
 <p>Phong Shading / Gouraud Shading</p>
 <div>
     <label class="switch">
-            <input type="checkbox" checked onclick = "switchShading(this)">
-            <span class="slider2"></span>
+        <input type="checkbox" checked onclick="switchShading(this)">
+        <span class="slider2"></span>
     </label>
-<br>
-<p>Toggle Wireframe</p>
+    <br>
+    <p>Toggle Wireframe</p>
     <label class="switch">
-            <input type="checkbox" checked onclick = "toggleWireframe(this)">
-            <span class="slider2"></span>
+        <input type="checkbox" checked onclick="toggleWireframe(this)">
+        <span class="slider2"></span>
     </label>
 </div>
 <br>
 <div id="checkboxGrid">
 </div>
 <br/>
+
 
 </body>
 </html>

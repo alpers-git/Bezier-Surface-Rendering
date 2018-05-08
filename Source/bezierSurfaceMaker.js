@@ -6,20 +6,13 @@ let nSegments = 15;
 let gl;
 let program;
 
-let trackingMouse = false;
-let trackballMove = false;
-
-let curX, curY;
-let startX, startY;
-
 const angleSldierTemplate = "Push it! -10 to 10. Currently: ";
 const checkBoxTemplate = "<input type=\"checkbox\" id=\"#checkbox-id\" onchange=\'cpCheckEvent(this);\'>";
 
 let vertices = [];
 let normals = [];
 let indexArray = [];
-let controlPoints = []; // temporary 5x5 control points
-let selectedControlPoints = [];
+let controlPoints = [];
 let texCoordsArray = [];
 
 let vBufferId;
@@ -35,7 +28,7 @@ let near = 1;
 let far = 20;
 
 let radius = 6.0;
-let theta = 0.0;
+let eyeTheta = 0.0;
 let phi = 1.0;
 
 const black = vec4(0.0, 0.0, 0.0, 1.0);
@@ -48,7 +41,7 @@ const up = vec3(0.0, -1.0, 0.0);
 let fovy = 60;
 let aspect = 2;
 
-let lightPosition = vec4(10.0, 1.0, 9.0, 1.0);
+let lightPosition = vec4(30.0, 1.0, 9.0, 1.0);
 let lightAmbient = vec4(0.1, 0.1, 0.1, 1.0);
 let lightDiffuse = vec4(0.8, 0.8, 0.8, 1.0);
 let lightSpecular = vec4(0.8, 0.8, 0.8, 1.0);
@@ -68,6 +61,14 @@ let modelViewMatrixLoc, projectionMatrixLoc;
 
 let normalMatrix;
 let normalMatrixLoc;
+
+// q stuff
+var rotationMatrix;
+var rotationMatrixLoc;
+
+var angle = 0.0;
+var axis = [1, 0, 0];
+//
 
 function factorial(n) {
     return (n === 0 || n === 1) ? 1 : n * factorial(n - 1);
@@ -110,7 +111,6 @@ function evaluateControlPoints() {
             let x = evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1))
             vertices.push(x);
             texCoordsArray.push(vec2(i / (nSegments - 1), j / (nSegments - 1)));
-            //normals.push(vec4(x[0], x[1], x[2], 1));
         }
 
     calculateNormals();
@@ -152,8 +152,6 @@ function calculateNormals() {
             normals.push(vec4(-nt[0], -nt[1], -nt[2], 0));
         }
     }
-
-    //console.log(normals);
 }
 
 function configureTexture() {
@@ -253,7 +251,6 @@ function addControlPointY() {
 function changeValue(value) {
     document.getElementById("depthSlider").children[0].innerHTML = angleSldierTemplate + value;
     num = value;
-    //assignControlPoints(value);
 
     let checkboxDiv = document.getElementById("checkboxGrid");
 
@@ -263,7 +260,7 @@ function changeValue(value) {
             let checkBox = childDiv.children[j];
 
             if (checkBox.checked)
-                changeControlPointDepth(i,j, value);
+                changeControlPointDepth(i, j, value);
         }
     }
 }
@@ -273,40 +270,23 @@ function pushVertices(buffer, data) {
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(data));
 }
 
-//----------------------------------------------------
+function changeAngleX(xVal) {
+    let yVal = document.getElementById("yAngleSlider").value;
 
-function multq(a, b) {
-    // vec4(a.x*b.x - dot(a.yzw, b.yzw), a.x*b.yzw+b.x*a.yzw+cross(b.yzw, a.yzw))
-    let s = vec3(a[1], a[2], a[3]);
-    let t = vec3(b[1], b[2], b[3]);
-    return (vec4(a[0] * b[0] - dot(s, t), add(cross(t, s), add(scale(a[0], t), scale(b[0], s)))));
+    rotationMatrix = mult(rotate(xVal, [1, 0, 0]), rotate(yVal, [0, 1, 0]));
 }
 
+function changeAngleY(yVal) {
 
-function mouseMotion(x, y) {
-    if (trackingMouse) {
-        theta = x - startX;
-        phi = y - startY;
-    }
-}
+    let xVal = document.getElementById("xAngleSlider").value;
 
-function startMotion(x, y) {
-    trackingMouse = true;
-    startX = x;
-    startY = y;
-    curX += x;
-    curY += y;
-    trackballMove = true;
-}
-
-function stopMotion(x, y) {
-    trackingMouse = false;
-    trackballMove = false;
+    rotationMatrix = mult(rotate(xVal, [1, 0, 0]), rotate(yVal, [0, 1, 0]));
 }
 
 window.onload = init;
 
 function init() {
+
     let canvas = document.getElementById("gl-canvas");
 
     gl = WebGLUtils.setupWebGL(canvas);
@@ -364,7 +344,6 @@ function init() {
 
     fColor = gl.getUniformLocation(program, "fColor");
     flag = gl.getUniformLocation(program, "flag");
-    //gl.uniform1f (flag, 1.0);
 
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
     projectionMatrixLoc = gl.getUniformLocation(program, "projectionMatrix");
@@ -380,24 +359,6 @@ function init() {
 
     pushVertices(vBufferId, vertices);
 
-    canvas.addEventListener("mousedown", function (event) {
-        let x = 2 * event.clientX / canvas.width - 1;
-        let y = 2 * (canvas.height - event.clientY) / canvas.height - 1;
-        startMotion(x, y);
-    });
-
-    canvas.addEventListener("mouseup", function (event) {
-        let x = 2 * event.clientX / canvas.width - 1;
-        let y = 2 * (canvas.height - event.clientY) / canvas.height - 1;
-        stopMotion(x, y);
-    });
-
-    canvas.addEventListener("mousemove", function (event) {
-        let x = 2 * event.clientX / canvas.width - 1;
-        let y = 2 * (canvas.height - event.clientY) / canvas.height - 1;
-        mouseMotion(x, y);
-    });
-
     gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
     gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
     gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
@@ -407,7 +368,13 @@ function init() {
     configureTexture();
 
     drawCheckboxes();
+
+    rotationMatrix = mat4();
+    rotationMatrixLoc = gl.getUniformLocation(program, "r");
+    gl.uniformMatrix4fv(rotationMatrixLoc, false, flatten(rotationMatrix));
+
     render();
+
 }
 
 function convert2DInto1D(arr) {
@@ -431,70 +398,82 @@ let a = 1;
 
 //var x;
 function render() {
-    //theta += 0.03;
-    a++;
+    //eyeTheta += 0.03;
 
-    vertices = [];
-    normals = [];
+    function animate() {
+        setTimeout(function () {
 
-    evaluateControlPoints();
+            requestAnimationFrame(render);
 
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            //a++;
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, vBufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+            vertices = [];
+            normals = [];
 
-    let eye = vec3(radius * Math.sin(theta) * Math.cos(phi),
-        radius * Math.sin(theta) * Math.sin(phi),
-        radius * Math.cos(theta));
+            evaluateControlPoints();
 
-    modelViewMatrix = lookAt(eye, at, up);
-    projectionMatrix = perspective(fovy, aspect, near, far);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    normalMatrix = [
-        vec3(modelViewMatrix[0][0], modelViewMatrix[0][1], modelViewMatrix[0][2]),
-        vec3(modelViewMatrix[1][0], modelViewMatrix[1][1], modelViewMatrix[1][2]),
-        vec3(modelViewMatrix[2][0], modelViewMatrix[2][1], modelViewMatrix[2][2])
-    ];
 
-    ambientProduct = mult(lightAmbient, materialAmbient);
-    diffuseProduct = mult(lightDiffuse, materialDiffuse);
-    specularProduct = mult(lightSpecular, materialSpecular);
+            axis = normalize(axis);
 
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
-    gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix));
+            gl.uniformMatrix4fv(rotationMatrixLoc, false, flatten(rotationMatrix));
 
-    // draw each quad as two filled red triangles
-    // and then as two black line loops
-    for (let i = 0; i < indexArray.length; i += 4) {
-        //gl.uniform4fv(fColor, flatten(red));
-        gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
-        gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
-        gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
-        gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
-        gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
 
-        gl.drawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_BYTE, i);
+            gl.bindBuffer(gl.ARRAY_BUFFER, vBufferId);
+            gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
 
-        if (renderW) {
-            gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(black));
-            gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(black));
-            gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(black));
+            let eye = vec3(radius * Math.sin(eyeTheta) * Math.cos(phi), radius * Math.sin(eyeTheta) * Math.sin(phi), radius * Math.cos(eyeTheta));
 
-            gl.drawElements(gl.LINE_LOOP, 4, gl.UNSIGNED_BYTE, i);
-        }
+            modelViewMatrix = lookAt(eye, at, up);
+            projectionMatrix = perspective(fovy, aspect, near, far);
+
+            normalMatrix = [
+                vec3(modelViewMatrix[0][0], modelViewMatrix[0][1], modelViewMatrix[0][2]),
+                vec3(modelViewMatrix[1][0], modelViewMatrix[1][1], modelViewMatrix[1][2]),
+                vec3(modelViewMatrix[2][0], modelViewMatrix[2][1], modelViewMatrix[2][2])
+            ];
+
+            ambientProduct = mult(lightAmbient, materialAmbient);
+            diffuseProduct = mult(lightDiffuse, materialDiffuse);
+            specularProduct = mult(lightSpecular, materialSpecular);
+
+            gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+            gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
+            gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix));
+
+            // draw each quad as two filled red triangles
+            // and then as two black line loops
+            for (let i = 0; i < indexArray.length; i += 4) {
+                //gl.uniform4fv(fColor, flatten(red));
+                gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
+                gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
+                gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
+                gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
+                gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
+
+                gl.drawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_BYTE, i);
+
+                if (renderW) {
+                    gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(black));
+                    gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(black));
+                    gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(black));
+
+                    gl.drawElements(gl.LINE_LOOP, 4, gl.UNSIGNED_BYTE, i);
+                }
+            }
+
+            gl.bufferData(gl.ARRAY_BUFFER, flatten(convert2DInto1D(controlPoints)), gl.DYNAMIC_DRAW);
+            gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(blue));
+            gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(blue));
+            gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(blue));
+            gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(blue));
+
+            for (let i = 0; i < controlPoints[0].length * controlPoints.length; i++) {
+                gl.drawArrays(gl.POINTS, i, 1);
+            }
+        }, 1000 / 60)
     }
 
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(convert2DInto1D(controlPoints)), gl.DYNAMIC_DRAW);
-    gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(blue));
-    gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(blue));
-    gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(blue));
-    gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(blue));
-
-    for (let i = 0; i < controlPoints[0].length * controlPoints.length; i++) {
-        gl.drawArrays(gl.POINTS, i, 1);
-    }
-
-    requestAnimFrame(render);
+    animate();
 }
