@@ -1,52 +1,42 @@
 let numRow = 5;
 let numCol = 5;
 
-var nSegments = 15;
+let nSegments = 15;
 
-var texSize = 64;
+let gl;
+let program;
 
-var gl;
-var program;
+let trackingMouse = false;
+let trackballMove = false;
 
-var trackingMouse = false;
-var trackballMove = false;
-
-var curX, curY;
-var startX, startY;
+let curX, curY;
+let startX, startY;
 
 const angleSldierTemplate = "Push it! -10 to 10. Currently: ";
-const checkBoxTemplate = "<input type=\"checkbox\" id=\"#checkbox-id\">";
+const checkBoxTemplate = "<input type=\"checkbox\" id=\"#checkbox-id\" onchange=\'cpCheckEvent(this);\'>";
 
-var vertices = [];
-var normals = [];
-var indexArray = [];
-var controlPoints = []; // temporary 5x5 control points
-var selectedControlPoints = [];
-var texCoordsArray = [];
+let vertices = [];
+let normals = [];
+let indexArray = [];
+let controlPoints = []; // temporary 5x5 control points
+let selectedControlPoints = [];
+let texCoordsArray = [];
 
-var texCoord = [
-    vec2(0, 0),
-    vec2(0, 1),
-    vec2(1, 1),
-    vec2(1, 0)
-];
+let vBufferId;
+let vPosition;
 
+let num = 0;
+let fColor;
+let flag;
 
-var vBufferId;
-var vPosition;
+let renderW;
 
-var num = 0;
-var fColor;
-var flag;
+let near = 1;
+let far = 20;
 
-var renderW;
-
-var near = 1;
-var far = 20;
-
-var radius = 6.0;
-var theta = 0.0;
-var phi = 1.0;
+let radius = 6.0;
+let theta = 0.0;
+let phi = 1.0;
 
 const black = vec4(0.0, 0.0, 0.0, 1.0);
 const blue = vec4(0.0, 0.0, 1.0, 1.0);
@@ -58,25 +48,29 @@ const up = vec3(0.0, -1.0, 0.0);
 let fovy = 60;
 let aspect = 2;
 
-var lightPosition = vec4( 10.0, 1.0, 9.0, 1.0 );
-var lightAmbient = vec4( 0.1, 0.1, 0.1, 1.0 );
-var lightDiffuse = vec4( 0.8, 0.8, 0.8, 1.0 );
-var lightSpecular = vec4( 0.8, 0.8, 0.8, 1.0 )
+let lightPosition = vec4(10.0, 1.0, 9.0, 1.0);
+let lightAmbient = vec4(0.1, 0.1, 0.1, 1.0);
+let lightDiffuse = vec4(0.8, 0.8, 0.8, 1.0);
+let lightSpecular = vec4(0.8, 0.8, 0.8, 1.0);
 
-var materialAmbient =vec4( 0.5, 0.5, 0.5, 1.0 );
-var materialDiffuse = vec4( 0.8, 0.8, 0.8, 1.0 );
-var materialSpecular = vec4( 0.8, 0.8, 0.8, 1.0 );
-var materialShininess = 10.0;
-var ctm;
-var ambientColor, diffuseColor, specularColor;
+let materialAmbient = vec4(0.5, 0.5, 0.5, 1.0);
+let materialDiffuse = vec4(0.8, 0.8, 0.8, 1.0);
+let materialSpecular = vec4(0.8, 0.8, 0.8, 1.0);
+let materialShininess = 10.0;
+
+
+let ambientProduct = mult(lightAmbient, materialAmbient);
+let diffuseProduct = mult(lightDiffuse, materialDiffuse);
+let specularProduct = mult(lightSpecular, materialSpecular);
 
 let modelViewMatrix, projectionMatrix;
 let modelViewMatrixLoc, projectionMatrixLoc;
 
+let normalMatrix;
+let normalMatrixLoc;
+
 function factorial(n) {
-    if (n === 0 || n === 1)
-        return 1;
-    return n * factorial(n - 1);
+    return (n === 0 || n === 1) ? 1 : n * factorial(n - 1);
 }
 
 //Reference: https://www.scratchapixel.com/lessons/advanced-rendering/bezier-curve-rendering-utah-teapot
@@ -112,74 +106,49 @@ function evaluateBezierSurface(u, v) {
 
 function evaluateControlPoints() {
     for (let i = 0; i < nSegments; i++)
-        for (let j = 0; j < nSegments; j++)
-        {
-            let x=evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1))
+        for (let j = 0; j < nSegments; j++) {
+            let x = evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1))
             vertices.push(x);
             texCoordsArray.push(vec2(i / (nSegments - 1), j / (nSegments - 1)));
             //normals.push(vec4(x[0], x[1], x[2], 1));
         }
 
     calculateNormals();
-            
 }
 
 //Calculates normals for vertices and pushes them to normals array
-function calculateNormals()
-{
+function calculateNormals() {
     let n1;
     let n2;
     let n3;
     let n4;
 
-    //console.log("a");
-
-    for (let j =0; j< nSegments; j++)
-    {
-        for (let i =0; i< nSegments; i++)
-        {
-            let index = i + nSegments*j;
-            if((j+1) < (nSegments) && (i+1) < (nSegments))
-            {
-                n1 = calculateNormal(vertices[nSegments+index], vertices[index+1], vertices[index]);
-                //console.log("b");
-            }
+    for (let j = 0; j < nSegments; j++) {
+        for (let i = 0; i < nSegments; i++) {
+            let index = i + nSegments * j;
+            if ((j + 1) < (nSegments) && (i + 1) < (nSegments))
+                n1 = calculateNormal(vertices[nSegments + index], vertices[index + 1], vertices[index]);
             else
-            {
                 n1 = vec4();
-                //console.log("c");
-            }
-            if((j-1) >= 0 && (i+1) < (nSegments))
-            {
-                n2 = calculateNormal(vertices[index], vertices[index+1], vertices[-nSegments+index+1]);
-            }
+            if ((j - 1) >= 0 && (i + 1) < (nSegments))
+                n2 = calculateNormal(vertices[index], vertices[index + 1], vertices[-nSegments + index + 1]);
             else
-            {
                 n2 = vec4();
-            }
-    
-            if((j-1) >= 0 && (i-1) >= 0 )
-            {
-                n3 = calculateNormal(vertices[index], vertices[index-nSegments], vertices[-nSegments+index-1]);
-            }
+
+            if ((j - 1) >= 0 && (i - 1) >= 0)
+                n3 = calculateNormal(vertices[index], vertices[index - nSegments], vertices[-nSegments + index - 1]);
             else
-            {
                 n3 = vec4();
-            }
-    
-            if((j+1) < nSegments && (i-1) >= 0)
-            {
-                n4 = calculateNormal(vertices[index], vertices[index+nSegments-1], vertices[nSegments+index]);
-            }
+
+            if ((j + 1) < nSegments && (i - 1) >= 0)
+                n4 = calculateNormal(vertices[index], vertices[index + nSegments - 1], vertices[nSegments + index]);
             else
-            {
                 n4 = vec4();
-            }
-            let nt= add(n1, n2);
+
+            let nt = add(n1, n2);
             nt = add(nt, n3);
             nt = add(nt, n4);
             nt = normalize(nt, false);
-        
             normals.push(vec4(-nt[0], -nt[1], -nt[2], 0));
         }
     }
@@ -188,25 +157,42 @@ function calculateNormals()
 }
 
 function configureTexture() {
-    var texture = gl.createTexture();
-    gl.bindTexture( gl.TEXTURE_2D, texture );
-        var image = new Image();
-        image.src = "../resources/tex2.png";//FOR FUN TYPE tex2
-        image.addEventListener('load', function() {
-          // Now that the image has loaded make copy it to the texture.
-          gl.bindTexture(gl.TEXTURE_2D, texture);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, image);
-          gl.generateMipmap(gl.TEXTURE_2D);
-        });
+    let texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    let image = new Image();
+    image.src = "../resources/tex7.png";//FOR FUN TYPE tex2
+    image.addEventListener('load', function () {
+        // Now that the image has loaded make copy it to the texture.
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.generateMipmap(gl.TEXTURE_2D);
+    });
 }
 
-function calculateNormal(a,b,c)
-{
-    var t1 = subtract(b, a);
-    var t2 = subtract(c, a);
-    var normal = normalize(cross(t2, t1));
+function calculateNormal(a, b, c) {
+    let t1 = subtract(b, a);
+    let t2 = subtract(c, a);
+    let normal = normalize(cross(t2, t1));
     normal = vec4(normal);
     return normal;
+}
+
+function initializeControlPoints(n) {
+
+    controlPoints = [[vec4(-1, -1, 1, 1), vec4(-0.5, -1, 1, 1), vec4(0, -1, 1, 1), vec4(0.5, -1, 1, 1), vec4(1, -1, 1, 1)],
+        [vec4(-1, -0.5, 1, 1), vec4(-0.5, -0.5, 1, 1), vec4(0, -0.5, 1, 1), vec4(0.5, -0.5, 1, 1), vec4(1, -0.5, 1, 1)],
+        [vec4(-1, 0, 1, 1), vec4(-0.5, 0, 1, 1), vec4(0, 0, n, 1), vec4(0.5, 0, 1, 1), vec4(1, 0, 1, 1)],
+        [vec4(-1, 0.5, 1, 1), vec4(-0.5, 0.5, 1, 1), vec4(0, 0.5, 1, 1), vec4(0.5, 0.5, 1, 1), vec4(1, 0.5, 1, 1)],
+        [vec4(-1, 1, 1, 1), vec4(-0.5, 1, 1, 1), vec4(0, 1, 1, 1), vec4(0.5, 1, 1, 1), vec4(1, 1, 1, 1)]];
+
+}
+
+function changeControlPointDepth(x, y, depth) {
+    controlPoints[x][y][2] = depth;
+}
+
+function cpCheckEvent(checkBox) {
+    console.log(checkBox.id);
 }
 
 function drawCheckboxes() {
@@ -214,9 +200,9 @@ function drawCheckboxes() {
     let checkboxDiv = document.getElementById("checkboxGrid");
     checkboxDiv.innerHTML = "";
 
-    for (let i = 0; i < numCol; i++) {
+    for (let i = 0; i < numRow; i++) {
         let tempDiv = "<div class='checkboxDiv'>";
-        for (let j = 0; j < numRow; j++)
+        for (let j = 0; j < numCol; j++)
             tempDiv += checkBoxTemplate.replace("#checkbox-id", (controlPoints[i][j]));
         tempDiv += "</div>";
 
@@ -224,55 +210,41 @@ function drawCheckboxes() {
     }
 }
 
-function assignControlPoints(n) {
-
-    controlPoints = [[vec4(-1, -1, -n, 1), vec4(-0.5, -1, -n, 1), vec4(0, -1, -n, 1), vec4(0.5, -1, -n, 1), vec4(1, -1, -n, 1)],
-        [vec4(-1, -0.5, -n, 1), vec4(-0.5, -0.5, 1, 1), vec4(0, -0.5, 1, 1), vec4(0.5, -0.5, 1, 1), vec4(1, -0.5, -n, 1)],
-        [vec4(-1, 0, -n, 1), vec4(-0.5, 0, 1, 1), vec4(0, 0, n, 1), vec4(0.5, 0, 1, 1), vec4(1, 0, -n, 1)],
-        [vec4(-1, 0.5, -n, 1), vec4(-0.5, 0.5, 1, 1), vec4(0, 0.5, 1, 1), vec4(0.5, 0.5, 1, 1), vec4(1, 0.5, -n, 1)],
-        [vec4(-1, 1, -n, 1), vec4(-0.5, 1, -n, 1), vec4(0, 1, -n, 1), vec4(0.5, 1, -n, 1), vec4(1, 1, -n, 1)]];
-
-}
-
 function addControlPointX() {
-    const currentXLength = numCol;
-    const currentYLength = numRow;
-    const newXIncrement = 2.0 / currentXLength;
-    const yIncrement = 2.0 / (currentYLength - 1);
+
+    const newXIncrement = 2.0 / numCol;
+    const yIncrement = 2.0 / (numRow - 1);
 
     let newControlPoints = [];
 
-    for (let y = 0; y < currentYLength; y++) {
+    for (let y = 0; y < numRow; y++) {
         let temp = [];
-        for (let x = 0; x < currentXLength + 1; x++)
+        for (let x = 0; x < numCol + 1; x++)
             temp.push(vec4(-1 + (x * newXIncrement), -1 + (y * yIncrement), 1, 1));
         newControlPoints.push(temp);
     }
 
     controlPoints = newControlPoints;
-
     numCol++;
 
     drawCheckboxes();
 }
 
 function addControlPointY() {
-    const currentXLength = numCol;
-    const currentYLength = numRow;
-    const newXIncrement = 2.0 / (currentXLength - 1);
-    const yIncrement = 2.0 / currentYLength;
+
+    const newXIncrement = 2.0 / (numCol - 1);
+    const yIncrement = 2.0 / numRow;
 
     let newControlPoints = [];
 
-    for (let y = 0; y < currentYLength + 1; y++) {
+    for (let y = 0; y < numRow + 1; y++) {
         let temp = [];
-        for (let x = 0; x < currentXLength; x++)
+        for (let x = 0; x < numCol; x++)
             temp.push(vec4(-1 + (x * newXIncrement), -1 + (y * yIncrement), 1, 1));
         newControlPoints.push(temp);
     }
 
     controlPoints = newControlPoints;
-
     numRow++;
 
     drawCheckboxes();
@@ -281,7 +253,19 @@ function addControlPointY() {
 function changeValue(value) {
     document.getElementById("depthSlider").children[0].innerHTML = angleSldierTemplate + value;
     num = value;
-    assignControlPoints(value);
+    //assignControlPoints(value);
+
+    let checkboxDiv = document.getElementById("checkboxGrid");
+
+    for (let i = 0; i < numRow; i++) {
+        let childDiv = checkboxDiv.children[i];
+        for (let j = 0; j < numCol; j++) {
+            let checkBox = childDiv.children[j];
+
+            if (checkBox.checked)
+                changeControlPointDepth(i,j, value);
+        }
+    }
 }
 
 function pushVertices(buffer, data) {
@@ -293,16 +277,13 @@ function pushVertices(buffer, data) {
 
 function multq(a, b) {
     // vec4(a.x*b.x - dot(a.yzw, b.yzw), a.x*b.yzw+b.x*a.yzw+cross(b.yzw, a.yzw))
-
-    var s = vec3(a[1], a[2], a[3]);
-    var t = vec3(b[1], b[2], b[3]);
+    let s = vec3(a[1], a[2], a[3]);
+    let t = vec3(b[1], b[2], b[3]);
     return (vec4(a[0] * b[0] - dot(s, t), add(cross(t, s), add(scale(a[0], t), scale(b[0], s)))));
 }
 
 
 function mouseMotion(x, y) {
-    var dx, dy, dz;
-
     if (trackingMouse) {
         theta = x - startX;
         phi = y - startY;
@@ -338,7 +319,6 @@ function init() {
     diffuseProduct = mult(lightDiffuse, materialDiffuse);
     specularProduct = mult(lightSpecular, materialSpecular);
 
-
     // enable depth testing and polygon offset
     // so lines will be in front of filled triangles
     gl.enable(gl.DEPTH_TEST);
@@ -346,8 +326,7 @@ function init() {
     gl.enable(gl.POLYGON_OFFSET_FILL);
     gl.polygonOffset(1.0, 2.0);
 
-    assignControlPoints(num);
-
+    initializeControlPoints(num);
     evaluateControlPoints();
 
     for (let j = 1; j <= nSegments * nSegments; j++) {
@@ -363,44 +342,43 @@ function init() {
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
-    var tBuffer = gl.createBuffer();
-    gl.bindBuffer( gl.ARRAY_BUFFER, tBuffer);
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(texCoordsArray), gl.STATIC_DRAW );
+    let tBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(texCoordsArray), gl.STATIC_DRAW);
 
-    var vTexCoord = gl.getAttribLocation( program, "vTexCoord");
+    let vTexCoord = gl.getAttribLocation(program, "vTexCoord");
     gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vTexCoord);
 
-    var nBuffer = gl.createBuffer();
-    gl.bindBuffer( gl.ARRAY_BUFFER, nBuffer);
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW );
+    let nBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, nBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW);
 
-    var vNormal = gl.getAttribLocation( program, "vNormal" );
-    gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
-    gl.enableVertexAttribArray( vNormal);
-    
+    let vNormal = gl.getAttribLocation(program, "vNormal");
+    gl.vertexAttribPointer(vNormal, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vNormal);
+
     let iBufferId = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBufferId);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indexArray), gl.DYNAMIC_DRAW);
-    
+
     fColor = gl.getUniformLocation(program, "fColor");
     flag = gl.getUniformLocation(program, "flag");
     //gl.uniform1f (flag, 1.0);
-    
+
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
     projectionMatrixLoc = gl.getUniformLocation(program, "projectionMatrix");
-    normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
-    
+    normalMatrixLoc = gl.getUniformLocation(program, "normalMatrix");
+
     vBufferId = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vBufferId);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.DYNAMIC_DRAW);
-    
+
     vPosition = gl.getAttribLocation(program, "vPosition");
     gl.enableVertexAttribArray(vPosition);
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
 
     pushVertices(vBufferId, vertices);
-
 
     canvas.addEventListener("mousedown", function (event) {
         let x = 2 * event.clientX / canvas.width - 1;
@@ -420,16 +398,11 @@ function init() {
         mouseMotion(x, y);
     });
 
-    gl.uniform4fv( gl.getUniformLocation(program, 
-        "ambientProduct"),flatten(ambientProduct) );
-     gl.uniform4fv( gl.getUniformLocation(program, 
-        "diffuseProduct"),flatten(diffuseProduct) );
-     gl.uniform4fv( gl.getUniformLocation(program, 
-        "specularProduct"),flatten(specularProduct) );	
-     gl.uniform4fv( gl.getUniformLocation(program, 
-        "lightPosition"),flatten(lightPosition) );
-     gl.uniform1f( gl.getUniformLocation(program, 
-        "shininess"),materialShininess );
+    gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
+    gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
 
     configureTexture();
 
@@ -446,20 +419,15 @@ function convert2DInto1D(arr) {
     return output;
 }
 
-function switchShading(box)
-{
-    if(box.checked == true)
-        gl.uniform1i (flag, 1.0);
-    else
-        gl.uniform1i (flag, 0.0);
+function switchShading(box) {
+    box.checked ? gl.uniform1i(flag, 1.0) : gl.uniform1i(flag, 0.0);
 }
 
-function toggleWireframe(box)
-{
+function toggleWireframe(box) {
     renderW = box.checked;
 }
 
-var a = 1;
+let a = 1;
 
 //var x;
 function render() {
@@ -467,7 +435,7 @@ function render() {
     a++;
 
     vertices = [];
-    normals =[];
+    normals = [];
 
     evaluateControlPoints();
 
@@ -489,53 +457,42 @@ function render() {
         vec3(modelViewMatrix[2][0], modelViewMatrix[2][1], modelViewMatrix[2][2])
     ];
 
+    ambientProduct = mult(lightAmbient, materialAmbient);
+    diffuseProduct = mult(lightDiffuse, materialDiffuse);
+    specularProduct = mult(lightSpecular, materialSpecular);
+
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
     gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
-    gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix) );
+    gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix));
 
     // draw each quad as two filled red triangles
     // and then as two black line loops
     for (let i = 0; i < indexArray.length; i += 4) {
         //gl.uniform4fv(fColor, flatten(red));
-        gl.uniform4fv( gl.getUniformLocation(program, 
-            "ambientProduct"),flatten(ambientProduct) );
-         gl.uniform4fv( gl.getUniformLocation(program, 
-            "diffuseProduct"),flatten(diffuseProduct) );
-         gl.uniform4fv( gl.getUniformLocation(program, 
-            "specularProduct"),flatten(specularProduct) );	
-         gl.uniform4fv( gl.getUniformLocation(program, 
-            "lightPosition"),flatten(lightPosition) );
-         gl.uniform1f( gl.getUniformLocation(program, 
-            "shininess"),materialShininess );
+        gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
+        gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
+        gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
+        gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
+        gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
 
         gl.drawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_BYTE, i);
 
-        if(renderW)
-        {
-            gl.uniform4fv( gl.getUniformLocation(program, 
-                "ambientProduct"),flatten(black) );
-             gl.uniform4fv( gl.getUniformLocation(program, 
-                "diffuseProduct"),flatten(black) );
-             gl.uniform4fv( gl.getUniformLocation(program, 
-                "specularProduct"),flatten(black) );
-            
+        if (renderW) {
+            gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(black));
+            gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(black));
+            gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(black));
+
             gl.drawElements(gl.LINE_LOOP, 4, gl.UNSIGNED_BYTE, i);
         }
     }
 
     gl.bufferData(gl.ARRAY_BUFFER, flatten(convert2DInto1D(controlPoints)), gl.DYNAMIC_DRAW);
+    gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(blue));
+    gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(blue));
+    gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(blue));
+    gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(blue));
 
-    gl.uniform4fv( gl.getUniformLocation(program, 
-        "ambientProduct"),flatten(blue) );
-     gl.uniform4fv( gl.getUniformLocation(program, 
-        "diffuseProduct"),flatten(blue) );
-     gl.uniform4fv( gl.getUniformLocation(program, 
-        "specularProduct"),flatten(blue) );	
-     gl.uniform4fv( gl.getUniformLocation(program, 
-        "lightPosition"),flatten(blue));
-
-    for(let i = 0; i < controlPoints[0].length * controlPoints.length; i++)
-    {
+    for (let i = 0; i < controlPoints[0].length * controlPoints.length; i++) {
         gl.drawArrays(gl.POINTS, i, 1);
     }
 
