@@ -18,7 +18,6 @@ let texCoordsArray = [];
 let vBufferId;
 let vPosition;
 
-let num = 0;
 let fColor;
 let flag;
 
@@ -185,10 +184,6 @@ function initializeControlPoints(n) {
 
 }
 
-function changeControlPointDepth(x, y, depth) {
-    controlPoints[x][y][2] = depth;
-}
-
 function cpCheckEvent(checkBox) {
     console.log(checkBox.id);
 }
@@ -248,9 +243,13 @@ function addControlPointY() {
     drawCheckboxes();
 }
 
-function changeValue(value) {
-    document.getElementById("depthSlider").children[0].innerHTML = angleSldierTemplate + value;
-    num = value;
+function changeControlPointDepth(x, y, axis, depth) {
+    controlPoints[x][y][axis] = depth;
+}
+
+function changeValue(sliderObject) {
+    document.getElementById(sliderObject.id + "Slider").innerHTML = angleSldierTemplate + sliderObject.value;
+    num = sliderObject.value;
 
     let checkboxDiv = document.getElementById("checkboxGrid");
 
@@ -260,7 +259,7 @@ function changeValue(value) {
             let checkBox = childDiv.children[j];
 
             if (checkBox.checked)
-                changeControlPointDepth(i, j, value);
+                changeControlPointDepth(i, j, sliderObject.name, sliderObject.value);
         }
     }
 }
@@ -306,7 +305,7 @@ function init() {
     gl.enable(gl.POLYGON_OFFSET_FILL);
     gl.polygonOffset(1.0, 2.0);
 
-    initializeControlPoints(num);
+    initializeControlPoints(0);
     evaluateControlPoints();
 
     for (let j = 1; j <= nSegments * nSegments; j++) {
@@ -414,11 +413,8 @@ function render() {
 
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-
             axis = normalize(axis);
-
             gl.uniformMatrix4fv(rotationMatrixLoc, false, flatten(rotationMatrix));
-
 
             gl.bindBuffer(gl.ARRAY_BUFFER, vBufferId);
             gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
