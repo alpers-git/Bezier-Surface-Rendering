@@ -3,6 +3,8 @@ let numCol = 5;
 
 var nSegments = 15;
 
+var texSize = 64;
+
 var gl;
 var program;
 
@@ -20,6 +22,15 @@ var normals = [];
 var indexArray = [];
 var controlPoints = []; // temporary 5x5 control points
 var selectedControlPoints = [];
+var texCoordsArray = [];
+
+var texCoord = [
+    vec2(0, 0),
+    vec2(0, 1),
+    vec2(1, 1),
+    vec2(1, 0)
+];
+
 
 var vBufferId;
 var vPosition;
@@ -42,20 +53,20 @@ const blue = vec4(0.0, 0.0, 1.0, 1.0);
 const red = vec4(1.0, 0.0, 0.0, 1.0);
 
 const at = vec3(0.0, 0.0, 0.0);
-const up = vec3(0.0, 1.0, 0.0);
+const up = vec3(0.0, -1.0, 0.0);
 
 let fovy = 60;
 let aspect = 2;
 
-var lightPosition = vec4(1.0, 1.0, 1.0, 0.0 );
-var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
-var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
-var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
+var lightPosition = vec4( 10.0, 1.0, 9.0, 1.0 );
+var lightAmbient = vec4( 0.1, 0.1, 0.1, 1.0 );
+var lightDiffuse = vec4( 0.8, 0.8, 0.8, 1.0 );
+var lightSpecular = vec4( 0.8, 0.8, 0.8, 1.0 )
 
-var materialAmbient = vec4( 1.0, 0.0, 0.0, 1.0 );
-var materialDiffuse = vec4( 1.0, 0.3, 0.0, 1.0 );
-var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
-var materialShininess = 30.0;
+var materialAmbient =vec4( 0.5, 0.5, 0.5, 1.0 );
+var materialDiffuse = vec4( 0.8, 0.8, 0.8, 1.0 );
+var materialSpecular = vec4( 0.8, 0.8, 0.8, 1.0 );
+var materialShininess = 10.0;
 var ctm;
 var ambientColor, diffuseColor, specularColor;
 
@@ -105,6 +116,7 @@ function evaluateControlPoints() {
         {
             let x=evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1))
             vertices.push(x);
+            texCoordsArray.push(vec2(i / (nSegments - 1), j / (nSegments - 1)));
             //normals.push(vec4(x[0], x[1], x[2], 1));
         }
 
@@ -173,6 +185,19 @@ function calculateNormals()
     }
 
     //console.log(normals);
+}
+
+function configureTexture() {
+    var texture = gl.createTexture();
+    gl.bindTexture( gl.TEXTURE_2D, texture );
+        var image = new Image();
+        image.src = "../resources/tex2.png";//FOR FUN TYPE tex2
+        image.addEventListener('load', function() {
+          // Now that the image has loaded make copy it to the texture.
+          gl.bindTexture(gl.TEXTURE_2D, texture);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, image);
+          gl.generateMipmap(gl.TEXTURE_2D);
+        });
 }
 
 function calculateNormal(a,b,c)
@@ -307,7 +332,7 @@ function init() {
     if (!gl) alert("WebGL isn't available");
 
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearColor(0.0, 0.0, 0.0, 0.0);
 
     ambientProduct = mult(lightAmbient, materialAmbient);
     diffuseProduct = mult(lightDiffuse, materialDiffuse);
@@ -337,6 +362,14 @@ function init() {
 
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
+
+    var tBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, tBuffer);
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(texCoordsArray), gl.STATIC_DRAW );
+
+    var vTexCoord = gl.getAttribLocation( program, "vTexCoord");
+    gl.vertexAttribPointer(vTexCoord, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vTexCoord);
 
     var nBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, nBuffer);
@@ -397,6 +430,8 @@ function init() {
         "lightPosition"),flatten(lightPosition) );
      gl.uniform1f( gl.getUniformLocation(program, 
         "shininess"),materialShininess );
+
+    configureTexture();
 
     drawCheckboxes();
     render();
@@ -472,6 +507,7 @@ function render() {
             "lightPosition"),flatten(lightPosition) );
          gl.uniform1f( gl.getUniformLocation(program, 
             "shininess"),materialShininess );
+
         gl.drawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_BYTE, i);
 
         if(renderW)
@@ -482,6 +518,7 @@ function render() {
                 "diffuseProduct"),flatten(black) );
              gl.uniform4fv( gl.getUniformLocation(program, 
                 "specularProduct"),flatten(black) );
+            
             gl.drawElements(gl.LINE_LOOP, 4, gl.UNSIGNED_BYTE, i);
         }
     }
