@@ -201,7 +201,7 @@ function cpCheckEvent(checkBox) {
 
 function drawCheckboxes() {
 
-    let checkBoxNum = 24;
+    let checkBoxNum = controlPoints[0].length * controlPoints.length - 1;
 
     let checkboxDiv = document.getElementById("checkboxGrid");
     checkboxDiv.innerHTML = "";
@@ -219,6 +219,13 @@ function drawCheckboxes() {
 }
 
 function addControlPointX() {
+
+    if (numCol > 9) {
+        alert("10 control points should do. I can add but ask no more.");
+        return;
+    }
+
+    checkedControlPoints = [];
 
     const newXIncrement = 2.0 / numCol;
     const yIncrement = 2.0 / (numRow - 1);
@@ -240,6 +247,13 @@ function addControlPointX() {
 
 function addControlPointY() {
 
+    if (numRow > 9) {
+        alert("10 control points should do. I can add but ask no more.");
+        return;
+    }
+
+    checkedControlPoints = [];
+
     const newXIncrement = 2.0 / (numCol - 1);
     const yIncrement = 2.0 / numRow;
 
@@ -256,6 +270,62 @@ function addControlPointY() {
     numRow++;
 
     drawCheckboxes();
+}
+
+function removeControlPointX() {
+
+    if (numCol < 4) {
+        alert("What Bezier do if he saw you try this with less than 3 CPs?");
+        return;
+    }
+
+    checkedControlPoints = [];
+
+    const newXIncrement = 2.0 / (numCol - 2);
+    const yIncrement = 2.0 / (numRow - 1);
+
+    let newControlPoints = [];
+
+    for (let y = 0; y < numRow; y++) {
+        let temp = [];
+        for (let x = 0; x < numCol - 1; x++)
+            temp.push(vec4(-1 + (x * newXIncrement), -1 + (y * yIncrement), 1, 1));
+        newControlPoints.push(temp);
+    }
+
+    controlPoints = newControlPoints;
+    numCol--;
+
+    drawCheckboxes();
+
+}
+
+function removeControlPointY() {
+
+    if (numRow < 4) {
+        alert("What Bezier do if he saw you try this with less than 3 CPs?");
+        return;
+    }
+
+    checkedControlPoints = [];
+
+    const newXIncrement = 2.0 / (numCol - 1);
+    const yIncrement = 2.0 / (numRow - 2);
+
+    let newControlPoints = [];
+
+    for (let y = 0; y < numRow - 1; y++) {
+        let temp = [];
+        for (let x = 0; x < numCol; x++)
+            temp.push(vec4(-1 + (x * newXIncrement), -1 + (y * yIncrement), 1, 1));
+        newControlPoints.push(temp);
+    }
+
+    controlPoints = newControlPoints;
+    numRow--;
+
+    drawCheckboxes();
+
 }
 
 function changeControlPointDepth(x, y, axis, depth) {
