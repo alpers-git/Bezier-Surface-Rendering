@@ -174,6 +174,16 @@ function textureSelectionChanged(textureSelector) {
     configureTexture(DEFAULT_TEXTURE_LOCATION + textureSelector.value);
 }
 
+function translateLight(lightSlider) {
+
+    if (lightSlider.name === 'x')
+        lightPosition = vec4(1.0 + lightSlider.value, 1.0, 9.0, 1.0);
+    else if (lightSlider.name === 'y')
+        lightPosition = vec4(1.0, 1.0 + lightSlider.value, 9.0, 1.0);
+    else if (lightSlider.name === 'z')
+        lightPosition = vec4(1.0, 1.0, 9.0 + lightSlider.value, 1.0);
+}
+
 function calculateNormal(a, b, c) {
     let t1 = subtract(b, a);
     let t2 = subtract(c, a);
