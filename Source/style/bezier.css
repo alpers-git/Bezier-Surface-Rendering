@@ -99,15 +99,28 @@ p {
 }
 
 input:checked + .slider2 {
-    background-color: #2196F3;
+    background-color: #46aeaf;
 }
 
 input:focus + .slider2 {
-    box-shadow: 0 0 1px #2196F3;
+    box-shadow: 0 0 1px #46aeaf;
 }
 
 input:checked + .slider2:before {
     -webkit-transform: translateX(26px);
     -ms-transform: translateX(26px);
     transform: translateX(26px);
+}
+
+/* Create a custom checkbox */
+
+.checkmark {
+    height: 25px;
+    width: 25px;
+    color: #46aeaf;
+}
+
+.checkBoxContainer input:checked {
+    color: #46aeaf;
+
 }

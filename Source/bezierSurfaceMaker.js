@@ -7,7 +7,7 @@ let gl;
 let program;
 
 const angleSldierTemplate = "Push it! -10 to 10. Currently: ";
-const checkBoxTemplate = "<input type=\"checkbox\" name=\"#checkbox-name\" id=\"#checkbox-id\" onchange=\'cpCheckEvent(this);\'>";
+const checkBoxTemplate = "<input class=\'checkmark\' type=\"checkbox\" name=\"#checkbox-name\" id=\"#checkbox-id\" onchange=\'cpCheckEvent(this);\'>";
 const DEFAULT_TEXTURE_FILENAME = "../resources/wood.png";
 const DEFAULT_TEXTURE_LOCATION = "../resources/";
 
@@ -52,7 +52,6 @@ let materialDiffuse = vec4(0.8, 0.8, 0.8, 1.0);
 let materialSpecular = vec4(0.8, 0.8, 0.8, 1.0);
 let materialShininess = 900.0;
 
-
 let ambientProduct = mult(lightAmbient, materialAmbient);
 let diffuseProduct = mult(lightDiffuse, materialDiffuse);
 let specularProduct = mult(lightSpecular, materialSpecular);
@@ -71,7 +70,6 @@ var rotationMatrixLoc;
 
 var angle = 0.0;
 var axis = [1, 0, 0];
-//
 
 function factorial(n) {
     return (n === 0 || n === 1) ? 1 : n * factorial(n - 1);
