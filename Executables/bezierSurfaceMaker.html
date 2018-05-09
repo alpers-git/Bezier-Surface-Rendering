@@ -202,13 +202,13 @@
 <input type="button" value="Add_CP_x" onclick="addControlPointX()">
 <input type="button" value="Add_CP_y" onclick="addControlPointY()">
 
-<p id="xDepthSlider"> Push it X! -10 to 10. Currently: 0</p>
+<p id="xDepthSlider">xDepth Push it! -10 to 10. Currently: 0</p>
 <input class="slider" name="0" id="xDepth" type="range" min="-10" max="10" step="0.1" value="0" oninput="changeValue(this)"/>
 
-<p id="yDepthSlider"> Push it Y! -10 to 10. Currently: 0</p>
+<p id="yDepthSlider">yDepth Push it Y! -10 to 10. Currently: 0</p>
 <input class="slider" name="1" id="yDepth" type="range" min="-10" max="10" step="0.1" value="0" oninput="changeValue(this)"/>
 
-<p id="zDepthSlider"> Push it Z! -10 to 10. Currently: 0</p>
+<p id="zDepthSlider">zDepth Push it Z! -10 to 10. Currently: 0</p>
 <input class="slider" name="2" id="zDepth" type="range" min="-10" max="10" step="0.1" value="0" oninput="changeValue(this)"/>
 
 <div id="rotationSliders">
@@ -220,6 +220,9 @@
     <input class="slider" id="yAngleSlider" type="range" min="-90" max="90" step="1" value="0"
            oninput="changeAngleY(this.value)"/>
 </div>
+
+<p id="zoomP">Zoom Slider. 0.2, 5</p>
+<input class="slider" name="2" id="zoomSlider" type="range" min="0.4" max="2" step="0.01" value="1" oninput="zoom(this.value)"/>
 
 <p>Phong Shading / Gouraud Shading</p>
 <div>

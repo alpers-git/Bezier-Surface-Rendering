@@ -248,8 +248,7 @@ function changeControlPointDepth(x, y, axis, depth) {
 }
 
 function changeValue(sliderObject) {
-    document.getElementById(sliderObject.id + "Slider").innerHTML = angleSldierTemplate + sliderObject.value;
-    num = sliderObject.value;
+    document.getElementById(sliderObject.id + "Slider").innerHTML = sliderObject.id + " " + angleSldierTemplate + sliderObject.value;
 
     let checkboxDiv = document.getElementById("checkboxGrid");
 
@@ -420,6 +419,10 @@ function render() {
             gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
 
             let eye = vec3(radius * Math.sin(eyeTheta) * Math.cos(phi), radius * Math.sin(eyeTheta) * Math.sin(phi), radius * Math.cos(eyeTheta));
+
+            let zoomFactor = document.getElementById("zoomSlider").value;
+
+            eye = mult(vec3(zoomFactor, zoomFactor, zoomFactor), eye);
 
             modelViewMatrix = lookAt(eye, at, up);
             projectionMatrix = perspective(fovy, aspect, near, far);
