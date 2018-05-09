@@ -195,7 +195,7 @@ function cpCheckEvent(checkBox) {
 
 function drawCheckboxes() {
 
-    let checkBoxNum = 0;
+    let checkBoxNum = 24;
 
     let checkboxDiv = document.getElementById("checkboxGrid");
     checkboxDiv.innerHTML = "";
@@ -203,8 +203,8 @@ function drawCheckboxes() {
     for (let i = 0; i < numRow; i++) {
         let tempDiv = "<div class='checkboxDiv'>";
         for (let j = 0; j < numCol; j++) {
-            tempDiv += checkBoxTemplate.replace("#checkbox-id", (controlPoints[i][j])).replace("#checkbox-name", checkBoxNum);;
-            checkBoxNum++;
+            tempDiv += checkBoxTemplate.replace("#checkbox-id", (controlPoints[i][j])).replace("#checkbox-name", checkBoxNum);
+            checkBoxNum--;
         }
         tempDiv += "</div>";
 
@@ -267,7 +267,7 @@ function changeValue(sliderObject) {
             let checkBox = childDiv.children[j];
 
             if (checkBox.checked)
-                changeControlPointDepth(i, j, sliderObject.name, sliderObject.value);
+                changeControlPointDepth(i, numCol - j - 1, sliderObject.name, sliderObject.value);
         }
     }
 }
