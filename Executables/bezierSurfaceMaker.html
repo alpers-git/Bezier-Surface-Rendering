@@ -112,7 +112,7 @@
 
         void main()
         {
-            float fatt = 1.0/(50.0 + 50.0*ldistance + 50.0*ldistance* ldistance);
+            float fatt = 1.0/(5.0 + 5.0*ldistance + 5.0*ldistance* ldistance);
             if(flag)
             {
                 fColor * fatt;
@@ -181,8 +181,9 @@
             <input class="slider" name="2" id="zDepth" type="range" min="-10" max="10" step="0.1" value="0"
                    oninput="changeValue(this)"/>
 
-
-
+            <p id="Material shininess">Material shininess</p>
+            <input class="slider" name="s" id="shininessSlider" type="range" min="10" max="2000" step="1" value="500"
+                    oninput="setShininess(this)"/>
         </div>
         <div class="column">
 
@@ -198,8 +199,7 @@
             </div>
 
             <p id="zoomP">Zoom Slider. 0.2, 5</p>
-            <input class="slider" name="2" id="zoomSlider" type="range" min="0.4" max="2" step="0.01" value="1"
-                   oninput="zoom(this.value)"/>
+            <input class="slider" name="2" id="zoomSlider" type="range" min="0.4" max="2" step="0.01" value="1"/>
 
             <br>
             <br>
@@ -220,7 +220,7 @@
 
 
             <select id="textureSelector" onchange="textureSelectionChanged(this)">
-                <option>ibo.png</option>
+                <option>paramet.png</option>
                 <option>wood.png</option>
                 <option>jeans.png</option>
                 <option>f.png</option>
@@ -228,7 +228,7 @@
                 <option>stone.png</option>
             </select>
 
-            <p>Phong Shading / Gouraud Shading</p>
+            <p id="shading">Gouraud Shading</p>
             <div>
                 <label class="switch">
                     <input type="checkbox" checked onclick="switchShading(this)">
@@ -237,7 +237,7 @@
                 <br>
                 <p>Toggle Wireframe</p>
                 <label class="switch">
-                    <input type="checkbox" checked onclick="toggleWireframe(this)">
+                    <input type="checkbox" onclick="toggleWireframe(this)">
                     <span class="slider2"></span>
                 </label>
             </div>
@@ -251,7 +251,7 @@
                    oninput="translateLight(this)"/>
 
             <p id="zLightSliderP">zLight</p>
-            <input class="slider" name="z" id="zLightSlider" type="range" min="-10" max="10" step="0.1" value="9"
+            <input class="slider" name="z" id="zLightSlider" type="range" min="-10" max="10" step="0.1" value="1"
                    oninput="translateLight(this)"/>
         </div>
         <br>
