@@ -8,6 +8,8 @@ let program;
 
 const angleSldierTemplate = "Push it! -10 to 10. Currently: ";
 const checkBoxTemplate = "<input type=\"checkbox\" name=\"#checkbox-name\" id=\"#checkbox-id\" onchange=\'cpCheckEvent(this);\'>";
+const DEFAULT_TEXTURE_FILENAME = "../resources/wood.png";
+const DEFAULT_TEXTURE_LOCATION = "../resources/";
 
 let vertices = [];
 let normals = [];
@@ -155,17 +157,21 @@ function calculateNormals() {
     }
 }
 
-function configureTexture() {
+function configureTexture(fileName) {
     let texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     let image = new Image();
-    image.src = "../resources/tex6.png";//FOR FUN TYPE tex2
+    image.src = fileName;
     image.addEventListener('load', function () {
         // Now that the image has loaded make copy it to the texture.
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         gl.generateMipmap(gl.TEXTURE_2D);
     });
+}
+
+function textureSelectionChanged(textureSelector) {
+    configureTexture(DEFAULT_TEXTURE_LOCATION + textureSelector.value);
 }
 
 function calculateNormal(a, b, c) {
@@ -372,7 +378,7 @@ function init() {
     gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
     gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
 
-    configureTexture();
+    configureTexture(DEFAULT_TEXTURE_FILENAME);
 
     drawCheckboxes();
 

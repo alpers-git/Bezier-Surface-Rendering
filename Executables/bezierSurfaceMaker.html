@@ -175,6 +175,15 @@
 <p id="zoomP">Zoom Slider. 0.2, 5</p>
 <input class="slider" name="2" id="zoomSlider" type="range" min="0.4" max="2" step="0.01" value="1" oninput="zoom(this.value)"/>
 
+<select id="textureSelector" onchange="textureSelectionChanged(this)">
+    <option>ibo.png</option>
+    <option>wood.png</option>
+    <option>jeans.png</option>
+    <option>f.png</option>
+    <option>leather.png</option>
+    <option>stone.png</option>
+</select>
+
 <p>Phong Shading / Gouraud Shading</p>
 <div>
     <label class="switch">
