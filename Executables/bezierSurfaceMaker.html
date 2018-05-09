@@ -86,6 +86,12 @@
         }
 
 
+
+
+
+
+
+
     </script>
 
     <script id="fragment-shader" type="x-shader/x-fragment">
@@ -136,6 +142,12 @@
         }
 
 
+
+
+
+
+
+
     </script>
     <script type="text/javascript" src="../Source/webgl-utils.js"></script>
     <script type="text/javascript" src="../Source/initShaders.js"></script>
@@ -144,63 +156,86 @@
     <script type="text/javascript" src="../Source/bezierSurfaceMaker.js"></script>
 </head>
 
-<body>
-
-<canvas id="gl-canvas" width="1024" height="512">
-    Oops ... your browser doesn't support the HTML5 canvas element
-</canvas>
-
-<input type="button" value="Add_CP_x" onclick="addControlPointX()">
-<input type="button" value="Add_CP_y" onclick="addControlPointY()">
-<input type="button" value="Remove_CP_x" onclick="removeControlPointX()">
-<input type="button" value="Remove_CP_y" onclick="removeControlPointY()">
-
-<p id="xDepthSlider">xDepth Push it! -10 to 10. Currently: 0</p>
-<input class="slider" name="0" id="xDepth" type="range" min="-10" max="10" step="0.1" value="0" oninput="changeValue(this)"/>
-
-<p id="yDepthSlider">yDepth Push it Y! -10 to 10. Currently: 0</p>
-<input class="slider" name="1" id="yDepth" type="range" min="-10" max="10" step="0.1" value="0" oninput="changeValue(this)"/>
-
-<p id="zDepthSlider">zDepth Push it Z! -10 to 10. Currently: 0</p>
-<input class="slider" name="2" id="zDepth" type="range" min="-10" max="10" step="0.1" value="0" oninput="changeValue(this)"/>
-
-<div id="rotationSliders">
-    <p>X -90 to 90</p>
-    <input class="slider" id="xAngleSlider" type="range" min="-90" max="90" step="1" value="0"
-           oninput="changeAngleX(this.value)"/>
-
-    <p>Y -90 to 90</p>
-    <input class="slider" id="yAngleSlider" type="range" min="-90" max="90" step="1" value="0"
-           oninput="changeAngleY(this.value)"/>
-</div>
-
-<p id="zoomP">Zoom Slider. 0.2, 5</p>
-<input class="slider" name="2" id="zoomSlider" type="range" min="0.4" max="2" step="0.01" value="1" oninput="zoom(this.value)"/>
-
-<select id="textureSelector" onchange="textureSelectionChanged(this)">
-    <option>ibo.png</option>
-    <option>wood.png</option>
-    <option>jeans.png</option>
-    <option>f.png</option>
-    <option>leather.png</option>
-    <option>stone.png</option>
-</select>
-
-<p>Phong Shading / Gouraud Shading</p>
 <div>
-    <label class="switch">
-        <input type="checkbox" checked onclick="switchShading(this)">
-        <span class="slider2"></span>
-    </label>
-    <br>
-    <p>Toggle Wireframe</p>
-    <label class="switch">
-        <input type="checkbox" checked onclick="toggleWireframe(this)">
-        <span class="slider2"></span>
-    </label>
-</div>
-<br>
-<div id="checkboxGrid">
+
+    <canvas id="gl-canvas" width="1024" height="512">
+        Oops ... your browser doesn't support the HTML5 canvas element
+    </canvas>
+
+    <div>
+
+        <div class="column">
+
+            <p id="xDepthSlider">xDepth Push it! -10 to 10. Currently: 0</p>
+            <input class="slider" name="0" id="xDepth" type="range" min="-10" max="10" step="0.1" value="0"
+                   oninput="changeValue(this)"/>
+
+            <p id="yDepthSlider">yDepth Push it Y! -10 to 10. Currently: 0</p>
+            <input class="slider" name="1" id="yDepth" type="range" min="-10" max="10" step="0.1" value="0"
+                   oninput="changeValue(this)"/>
+
+            <p id="zDepthSlider">zDepth Push it Z! -10 to 10. Currently: 0</p>
+            <input class="slider" name="2" id="zDepth" type="range" min="-10" max="10" step="0.1" value="0"
+                   oninput="changeValue(this)"/>
+
+            <p id="zoomP">Zoom Slider. 0.2, 5</p>
+            <input class="slider" name="2" id="zoomSlider" type="range" min="0.4" max="2" step="0.01" value="1"
+                   oninput="zoom(this.value)"/>
+
+        </div>
+        <div class="column">
+
+
+            <div id="rotationSliders">
+                <p>X -90 to 90</p>
+                <input class="slider" id="xAngleSlider" type="range" min="-90" max="90" step="1" value="0"
+                       oninput="changeAngleX(this.value)"/>
+
+                <p>Y -90 to 90</p>
+                <input class="slider" id="yAngleSlider" type="range" min="-90" max="90" step="1" value="0"
+                       oninput="changeAngleY(this.value)"/>
+            </div>
+
+            <div id="checkboxGrid">
+
+            </div>
+        </div>
+
+        <div class="column">
+
+            <input type="button" value="Add_CP_x" onclick="addControlPointX()">
+            <input type="button" value="Add_CP_y" onclick="addControlPointY()">
+            <input type="button" value="Remove_CP_x" onclick="removeControlPointX()">
+            <input type="button" value="Remove_CP_y" onclick="removeControlPointY()">
+
+
+            <select id="textureSelector" onchange="textureSelectionChanged(this)">
+                <option>ibo.png</option>
+                <option>wood.png</option>
+                <option>jeans.png</option>
+                <option>f.png</option>
+                <option>leather.png</option>
+                <option>stone.png</option>
+            </select>
+
+            <p>Phong Shading / Gouraud Shading</p>
+            <div>
+                <label class="switch">
+                    <input type="checkbox" checked onclick="switchShading(this)">
+                    <span class="slider2"></span>
+                </label>
+                <br>
+                <p>Toggle Wireframe</p>
+                <label class="switch">
+                    <input type="checkbox" checked onclick="toggleWireframe(this)">
+                    <span class="slider2"></span>
+                </label>
+            </div>
+        </div>
+        <br>
+
+    </div>
+
 </div>
 <br/>
 
