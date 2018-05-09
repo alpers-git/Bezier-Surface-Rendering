@@ -7,7 +7,7 @@ let gl;
 let program;
 
 const angleSldierTemplate = "Push it! -10 to 10. Currently: ";
-const checkBoxTemplate = "<input type=\"checkbox\" id=\"#checkbox-id\" onchange=\'cpCheckEvent(this);\'>";
+const checkBoxTemplate = "<input type=\"checkbox\" name=\"#checkbox-name\" id=\"#checkbox-id\" onchange=\'cpCheckEvent(this);\'>";
 
 let vertices = [];
 let normals = [];
@@ -60,6 +60,8 @@ let modelViewMatrixLoc, projectionMatrixLoc;
 
 let normalMatrix;
 let normalMatrixLoc;
+
+let checkedControlPoints = [];
 
 // q stuff
 var rotationMatrix;
@@ -185,18 +187,25 @@ function initializeControlPoints(n) {
 }
 
 function cpCheckEvent(checkBox) {
-    console.log(checkBox.id);
+    if (checkBox.checked)
+        checkedControlPoints.push(checkBox.name);
+    else
+        checkedControlPoints.splice( checkedControlPoints.indexOf(checkBox.name), 1 );
 }
 
 function drawCheckboxes() {
+
+    let checkBoxNum = 0;
 
     let checkboxDiv = document.getElementById("checkboxGrid");
     checkboxDiv.innerHTML = "";
 
     for (let i = 0; i < numRow; i++) {
         let tempDiv = "<div class='checkboxDiv'>";
-        for (let j = 0; j < numCol; j++)
-            tempDiv += checkBoxTemplate.replace("#checkbox-id", (controlPoints[i][j]));
+        for (let j = 0; j < numCol; j++) {
+            tempDiv += checkBoxTemplate.replace("#checkbox-id", (controlPoints[i][j])).replace("#checkbox-name", checkBoxNum);;
+            checkBoxNum++;
+        }
         tempDiv += "</div>";
 
         checkboxDiv.innerHTML = tempDiv + checkboxDiv.innerHTML;
@@ -469,8 +478,11 @@ function render() {
             gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(blue));
 
             for (let i = 0; i < controlPoints[0].length * controlPoints.length; i++) {
-                gl.drawArrays(gl.POINTS, i, 1);
+                if (checkedControlPoints.includes(i.toString()))
+                    gl.drawArrays(gl.POINTS, i, 1);
             }
+
+
         }, 1000 / 60)
     }
 
