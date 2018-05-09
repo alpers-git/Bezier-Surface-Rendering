@@ -8,7 +8,7 @@ let program;
 
 const angleSldierTemplate = "Push it! -10 to 10. Currently: ";
 const checkBoxTemplate = "<input class=\'checkmark\' type=\"checkbox\" name=\"#checkbox-name\" id=\"#checkbox-id\" onchange=\'cpCheckEvent(this);\'>";
-const DEFAULT_TEXTURE_FILENAME = "../resources/wood.png";
+const DEFAULT_TEXTURE_FILENAME = "../resources/paramet.png";
 const DEFAULT_TEXTURE_LOCATION = "../resources/";
 
 let vertices = [];
@@ -42,15 +42,15 @@ const up = vec3(0.0, -1.0, 0.0);
 let fovy = 60;
 let aspect = 2;
 
-let lightPosition = vec4(1.0, 1.0, 9.0, 1.0);
-let lightAmbient = vec4(0.2, 0.2, 0.2, 1.0);
+let lightPosition = vec4(1.0, 1.0, 1.0, 1.0);
+let lightAmbient = vec4(0.0, 0.0, 0.0, 1.0);
 let lightDiffuse = vec4(0.8, 0.8, 0.8, 1.0);
 let lightSpecular = vec4(0.8, 0.8, 0.8, 1.0);
 
 let materialAmbient = vec4(0.5, 0.5, 0.5, 1.0);
 let materialDiffuse = vec4(0.8, 0.8, 0.8, 1.0);
-let materialSpecular = vec4(0.8, 0.8, 0.8, 1.0);
-let materialShininess = 900.0;
+let materialSpecular = vec4(0.8, 0.8, 0.5, 1.0);
+let materialShininess = 1000.0;
 
 let ambientProduct = mult(lightAmbient, materialAmbient);
 let diffuseProduct = mult(lightDiffuse, materialDiffuse);
@@ -158,6 +158,8 @@ function calculateNormals() {
 function configureTexture(fileName) {
     let texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
     let image = new Image();
     image.src = fileName;
     image.addEventListener('load', function () {
@@ -165,6 +167,8 @@ function configureTexture(fileName) {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         gl.generateMipmap(gl.TEXTURE_2D);
+        gl.activeTexture(gl.TEXTURE0);
+
     });
 }
 
@@ -175,11 +179,25 @@ function textureSelectionChanged(textureSelector) {
 function translateLight(lightSlider) {
 
     if (lightSlider.name === 'x')
-        lightPosition = vec4(1.0 + lightSlider.value, 1.0, 9.0, 1.0);
+        lightPosition[0] = lightSlider.value;
     else if (lightSlider.name === 'y')
-        lightPosition = vec4(1.0, 1.0 + lightSlider.value, 9.0, 1.0);
+        lightPosition[1] = lightSlider.value;
     else if (lightSlider.name === 'z')
-        lightPosition = vec4(1.0, 1.0, 9.0 + lightSlider.value, 1.0);
+        lightPosition[2] = lightSlider.value;
+
+    lightPosition[3] = 1.0;
+}
+
+function setShininess(slider)
+{
+    materialShininess = slider.value;
+}
+
+function setNSeg(slider)
+{
+    nSegments = slider.value;
+
+    //evaluateControlPoints();
 }
 
 function calculateNormal(a, b, c) {
@@ -435,6 +453,7 @@ function init() {
 
     fColor = gl.getUniformLocation(program, "fColor");
     flag = gl.getUniformLocation(program, "flag");
+    gl.uniform1i(flag, 1.0);
 
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
     projectionMatrixLoc = gl.getUniformLocation(program, "projectionMatrix");
@@ -479,6 +498,7 @@ function convert2DInto1D(arr) {
 
 function switchShading(box) {
     box.checked ? gl.uniform1i(flag, 1.0) : gl.uniform1i(flag, 0.0);
+    box.checked ? document.getElementById("shading").innerHTML = "Gouraud Shading": document.getElementById("shading").innerHTML = "Phong Shading";
 }
 
 function toggleWireframe(box) {
