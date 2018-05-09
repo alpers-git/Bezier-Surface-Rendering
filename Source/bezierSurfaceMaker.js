@@ -40,15 +40,15 @@ const up = vec3(0.0, -1.0, 0.0);
 let fovy = 60;
 let aspect = 2;
 
-let lightPosition = vec4(30.0, 1.0, 9.0, 1.0);
-let lightAmbient = vec4(0.1, 0.1, 0.1, 1.0);
+let lightPosition = vec4(1.0, 1.0, 9.0, 1.0);
+let lightAmbient = vec4(0.2, 0.2, 0.2, 1.0);
 let lightDiffuse = vec4(0.8, 0.8, 0.8, 1.0);
 let lightSpecular = vec4(0.8, 0.8, 0.8, 1.0);
 
 let materialAmbient = vec4(0.5, 0.5, 0.5, 1.0);
 let materialDiffuse = vec4(0.8, 0.8, 0.8, 1.0);
 let materialSpecular = vec4(0.8, 0.8, 0.8, 1.0);
-let materialShininess = 10.0;
+let materialShininess = 900.0;
 
 
 let ambientProduct = mult(lightAmbient, materialAmbient);
@@ -159,7 +159,7 @@ function configureTexture() {
     let texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     let image = new Image();
-    image.src = "../resources/tex7.png";//FOR FUN TYPE tex2
+    image.src = "../resources/tex6.png";//FOR FUN TYPE tex2
     image.addEventListener('load', function () {
         // Now that the image has loaded make copy it to the texture.
         gl.bindTexture(gl.TEXTURE_2D, texture);
