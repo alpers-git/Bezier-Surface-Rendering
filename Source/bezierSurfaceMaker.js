@@ -3,7 +3,7 @@
  * Celik Koseoglu - 21400196
  * CS465 Computer Graphics
  * Course Instructor: Ugur Gudukbay
- * TA: Aytek Aymaz
+ * TA: Aytek Aman
  * Git commits available at: https://github.com/STLKRv1/Bezier-Surface-Rendering
  *
  * Allows for 2 different methods of shading; Gouraud and Phong.
