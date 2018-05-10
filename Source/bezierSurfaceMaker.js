@@ -1,18 +1,29 @@
-let numRow = 5;
-let numCol = 5;
+/*
+ * Alper Sahıstan - 21501207
+ * Celik Koseoglu - 21400196
+ * CS465 Computer Graphics
+ * Course Instructor: Ugur Gudukbay
+ * TA: Aytek Aymaz
+ * Git commits available at: https://github.com/STLKRv1/Bezier-Surface-Rendering
+ */
 
-let nSegments = 15;
+// initial number of control points
+let numRow = 5; // 5 points horizontally
+let numCol = 5; // 5 points vertically
+
+let nSegments = 15; //number of segments for bezier equation. More segments will result in smoother curves
 
 let gl;
 let program;
 
+// constrants used in the program. First 2 are for the UI and the last 2 are used for texture mapping
 const angleSldierTemplate = "Push it! -10 to 10. Currently: ";
 const checkBoxTemplate = "<input class=\'checkmark\' type=\"checkbox\" name=\"#checkbox-name\" id=\"#checkbox-id\" onchange=\'cpCheckEvent(this);\'>";
 const DEFAULT_TEXTURE_FILENAME = "../resources/paramet.png";
 const DEFAULT_TEXTURE_LOCATION = "../resources/";
 
 let vertices = [];
-let normals = [];
+let normals = []; //used for shading calculations
 let indexArray = [];
 let controlPoints = [];
 let texCoordsArray = [];
@@ -25,52 +36,52 @@ let flag;
 
 let renderW;
 
+// requrired for setting up the camera
 let near = 1;
 let far = 20;
-
 let radius = 6.0;
 let eyeTheta = 0.0;
 let phi = 1.0;
+const at = vec3(0.0, 0.0, 0.0);
+const up = vec3(0.0, -1.0, 0.0);
+let fovy = 60;
+let aspect = 2;
 
+// some predefined colors
 const black = vec4(0.0, 0.0, 0.0, 1.0);
 const blue = vec4(0.0, 0.0, 1.0, 1.0);
 const red = vec4(1.0, 0.0, 0.0, 1.0);
 
-const at = vec3(0.0, 0.0, 0.0);
-const up = vec3(0.0, -1.0, 0.0);
-
-let fovy = 60;
-let aspect = 2;
-
+// lighting
 let lightPosition = vec4(1.0, 1.0, 1.0, 1.0);
 let lightAmbient = vec4(0.0, 0.0, 0.0, 1.0);
 let lightDiffuse = vec4(0.8, 0.8, 0.8, 1.0);
 let lightSpecular = vec4(0.8, 0.8, 0.8, 1.0);
 
+// material shading
 let materialAmbient = vec4(0.5, 0.5, 0.5, 1.0);
 let materialDiffuse = vec4(0.8, 0.8, 0.8, 1.0);
 let materialSpecular = vec4(0.8, 0.8, 0.5, 1.0);
 let materialShininess = 1000.0;
 
+// light calculation matrices
 let ambientProduct = mult(lightAmbient, materialAmbient);
 let diffuseProduct = mult(lightDiffuse, materialDiffuse);
 let specularProduct = mult(lightSpecular, materialSpecular);
 
 let modelViewMatrix, projectionMatrix;
 let modelViewMatrixLoc, projectionMatrixLoc;
-
 let normalMatrix;
 let normalMatrixLoc;
 
-let checkedControlPoints = [];
+let checkedControlPoints = []; // stores the index of checked control points. These points are drawn on the curve when selected
 
-// q stuff
+// quaternion rotation stuff
 var rotationMatrix;
 var rotationMatrixLoc;
+var axis = [1, 0, 0]; // default quaternion rotation axis is x
 
-var angle = 0.0;
-var axis = [1, 0, 0];
-
+// tail recursive fast factorial method. Required for bezier surface rendering equation
 function factorial(n) {
     return (n === 0 || n === 1) ? 1 : n * factorial(n - 1);
 }
@@ -94,6 +105,7 @@ function evaluateBezierCurve(selectedCP, t) {
 
 }
 
+// evaluate the bezier surface using the evaluateBezierCurve method
 function evaluateBezierSurface(u, v) {
     let uCurve = [];
 
@@ -106,10 +118,11 @@ function evaluateBezierSurface(u, v) {
     return evaluateBezierCurve(uCurve, v);
 }
 
+//evaulate bezier control points according to the number of segments.
 function evaluateControlPoints() {
     for (let i = 0; i < nSegments; i++)
         for (let j = 0; j < nSegments; j++) {
-            let x = evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1))
+            let x = evaluateBezierSurface(i / (nSegments - 1), j / (nSegments - 1));
             vertices.push(x);
             texCoordsArray.push(vec2(i / (nSegments - 1), j / (nSegments - 1)));
         }
@@ -117,7 +130,7 @@ function evaluateControlPoints() {
     calculateNormals();
 }
 
-//Calculates normals for vertices and pushes them to normals array
+// calculates normals for vertices and pushes them to normals array
 function calculateNormals() {
     let n1;
     let n2;
@@ -155,6 +168,7 @@ function calculateNormals() {
     }
 }
 
+// function to bind the texture onto the curve
 function configureTexture(fileName) {
     let texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -172,10 +186,12 @@ function configureTexture(fileName) {
     });
 }
 
+// called when the texture comboBox value is changed on the UI. Calls the texture loading method with the value of the selection
 function textureSelectionChanged(textureSelector) {
     configureTexture(DEFAULT_TEXTURE_LOCATION + textureSelector.value);
 }
 
+// called when the light sliders are moved
 function translateLight(lightSlider) {
 
     if (lightSlider.name === 'x')
@@ -188,18 +204,13 @@ function translateLight(lightSlider) {
     lightPosition[3] = 1.0;
 }
 
+// called then the shininess slider is moved on the UI
 function setShininess(slider)
 {
     materialShininess = slider.value;
 }
 
-function setNSeg(slider)
-{
-    nSegments = slider.value;
-
-    //evaluateControlPoints();
-}
-
+// method to calculate the surface normal. Supply 3 points and it will return the normal vector
 function calculateNormal(a, b, c) {
     let t1 = subtract(b, a);
     let t2 = subtract(c, a);
@@ -208,16 +219,18 @@ function calculateNormal(a, b, c) {
     return normal;
 }
 
-function initializeControlPoints(n) {
+// initialize default control points
+function initializeControlPoints() {
 
     controlPoints = [[vec4(-1, -1, 1, 1), vec4(-0.5, -1, 1, 1), vec4(0, -1, 1, 1), vec4(0.5, -1, 1, 1), vec4(1, -1, 1, 1)],
         [vec4(-1, -0.5, 1, 1), vec4(-0.5, -0.5, 1, 1), vec4(0, -0.5, 1, 1), vec4(0.5, -0.5, 1, 1), vec4(1, -0.5, 1, 1)],
-        [vec4(-1, 0, 1, 1), vec4(-0.5, 0, 1, 1), vec4(0, 0, n, 1), vec4(0.5, 0, 1, 1), vec4(1, 0, 1, 1)],
+        [vec4(-1, 0, 1, 1), vec4(-0.5, 0, 1, 1), vec4(0, 0, 1, 1), vec4(0.5, 0, 1, 1), vec4(1, 0, 1, 1)],
         [vec4(-1, 0.5, 1, 1), vec4(-0.5, 0.5, 1, 1), vec4(0, 0.5, 1, 1), vec4(0.5, 0.5, 1, 1), vec4(1, 0.5, 1, 1)],
         [vec4(-1, 1, 1, 1), vec4(-0.5, 1, 1, 1), vec4(0, 1, 1, 1), vec4(0.5, 1, 1, 1), vec4(1, 1, 1, 1)]];
 
 }
 
+// called when a new control point is checked on the grid. Adds the index of the control point to the checkedControlPoints array. This array is later used to draw dots on the control points on the canvas.
 function cpCheckEvent(checkBox) {
     if (checkBox.checked)
         checkedControlPoints.push(checkBox.name);
@@ -225,6 +238,7 @@ function cpCheckEvent(checkBox) {
         checkedControlPoints.splice( checkedControlPoints.indexOf(checkBox.name), 1 );
 }
 
+//draws checkboxes on the UI. Relies on the pre-calculated increment values of checkboxes and numRow numCol
 function drawCheckboxes() {
 
     let checkBoxNum = controlPoints[0].length * controlPoints.length - 1;
@@ -253,6 +267,7 @@ function addControlPointX() {
 
     checkedControlPoints = [];
 
+    // create new increment values for the X axis
     const newXIncrement = 2.0 / numCol;
     const yIncrement = 2.0 / (numRow - 1);
 
@@ -266,11 +281,12 @@ function addControlPointX() {
     }
 
     controlPoints = newControlPoints;
-    numCol++;
+    numCol++; // obviously don't forget to increase the number of rows
 
     drawCheckboxes();
 }
 
+// method to increase the control points on the Y axis. Sets the upper bound to 10
 function addControlPointY() {
 
     if (numRow > 9) {
@@ -280,6 +296,7 @@ function addControlPointY() {
 
     checkedControlPoints = [];
 
+    // create new increment values for the X axis
     const newXIncrement = 2.0 / (numCol - 1);
     const yIncrement = 2.0 / numRow;
 
@@ -292,12 +309,13 @@ function addControlPointY() {
         newControlPoints.push(temp);
     }
 
-    controlPoints = newControlPoints;
-    numRow++;
+    controlPoints = newControlPoints; // change old control points with the new ones
+    numRow++; // obviously don't forget to increase the number of rows
 
     drawCheckboxes();
 }
 
+// method to remove a control point from the X axis. Limits the lower bound to 3
 function removeControlPointX() {
 
     if (numCol < 4) {
@@ -305,13 +323,15 @@ function removeControlPointX() {
         return;
     }
 
-    checkedControlPoints = [];
+    checkedControlPoints = []; // create an array of new control points. To be filled later
 
+    // create new increment values for the X axis
     const newXIncrement = 2.0 / (numCol - 2);
     const yIncrement = 2.0 / (numRow - 1);
 
     let newControlPoints = [];
 
+    // create new control point coordinates with the new increment values
     for (let y = 0; y < numRow; y++) {
         let temp = [];
         for (let x = 0; x < numCol - 1; x++)
@@ -319,13 +339,14 @@ function removeControlPointX() {
         newControlPoints.push(temp);
     }
 
-    controlPoints = newControlPoints;
-    numCol--;
+    controlPoints = newControlPoints; // change old control points with the new ones
+    numCol--; // obviously don't forget to decrease the number of rows
 
     drawCheckboxes();
 
 }
 
+// method to remove a control point from the Y axis. Limits the lower bound to 3
 function removeControlPointY() {
 
     if (numRow < 4) {
@@ -333,13 +354,15 @@ function removeControlPointY() {
         return;
     }
 
-    checkedControlPoints = [];
+    checkedControlPoints = []; // create an array of new control points. To be filled later
 
+    // create new increment values for the Y axis
     const newXIncrement = 2.0 / (numCol - 1);
     const yIncrement = 2.0 / (numRow - 2);
 
     let newControlPoints = [];
 
+    // create new control point coordinates with the new increment values
     for (let y = 0; y < numRow - 1; y++) {
         let temp = [];
         for (let x = 0; x < numCol; x++)
@@ -347,17 +370,19 @@ function removeControlPointY() {
         newControlPoints.push(temp);
     }
 
-    controlPoints = newControlPoints;
-    numRow--;
+    controlPoints = newControlPoints; // change old control points with the new ones
+    numRow--; // obviously don't forget to decrease the number of rows
 
     drawCheckboxes();
 
 }
 
+// assign the new depth value of the specified control point
 function changeControlPointDepth(x, y, axis, depth) {
     controlPoints[x][y][axis] = depth;
 }
 
+// method to change the depth of bezier curves. Called when a depth slider is moved.
 function changeValue(sliderObject) {
     document.getElementById(sliderObject.id + "Slider").innerHTML = sliderObject.id + " " + angleSldierTemplate + sliderObject.value;
 
@@ -374,21 +399,21 @@ function changeValue(sliderObject) {
     }
 }
 
+// set the buffer contain specified data
 function pushVertices(buffer, data) {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(data));
 }
 
+// rotation matrix calculation for X axis. Called when the X rotation slider is moved.
 function changeAngleX(xVal) {
     let yVal = document.getElementById("yAngleSlider").value;
-
     rotationMatrix = mult(rotate(xVal, [1, 0, 0]), rotate(yVal, [0, 1, 0]));
 }
 
+// rotation matrix calculation for X axis. Called when the Y rotation slider is moved.
 function changeAngleY(yVal) {
-
     let xVal = document.getElementById("xAngleSlider").value;
-
     rotationMatrix = mult(rotate(xVal, [1, 0, 0]), rotate(yVal, [0, 1, 0]));
 }
 
@@ -402,24 +427,22 @@ function init() {
     if (!gl) alert("WebGL isn't available");
 
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    gl.clearColor(0.0, 0.0, 0.0, 0.0); // fully transparent background
 
     ambientProduct = mult(lightAmbient, materialAmbient);
     diffuseProduct = mult(lightDiffuse, materialDiffuse);
     specularProduct = mult(lightSpecular, materialSpecular);
 
-    // enable depth testing and polygon offset
-    // so lines will be in front of filled triangles
+    // enable depth testing and polygon offset so lines will be in front of filled triangles
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
     gl.enable(gl.POLYGON_OFFSET_FILL);
     gl.polygonOffset(1.0, 2.0);
 
-    initializeControlPoints(0);
-    evaluateControlPoints();
+    initializeControlPoints(); // initalize 5x5 control points with their default values
+    evaluateControlPoints(); // evaluate newly initialized control points
 
     for (let j = 1; j <= nSegments * nSegments; j++) {
-
         if ((j - 1) % nSegments === (nSegments - 1))
             continue;
         indexArray.push(j - 1);
@@ -475,18 +498,19 @@ function init() {
     gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
     gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
 
-    configureTexture(DEFAULT_TEXTURE_FILENAME);
+    configureTexture(DEFAULT_TEXTURE_FILENAME); // load the default texture
 
-    drawCheckboxes();
+    drawCheckboxes(); // draw the checkboxes on the UI
 
     rotationMatrix = mat4();
     rotationMatrixLoc = gl.getUniformLocation(program, "r");
     gl.uniformMatrix4fv(rotationMatrixLoc, false, flatten(rotationMatrix));
 
-    render();
+    render(); // after everything is initialized to its default value, call the render method to do the magic
 
 }
 
+// used to convert control points 2D array into 1D array before flattening. A 2D is better for our manipulation purposes
 function convert2DInto1D(arr) {
     let output = [];
 
@@ -496,34 +520,31 @@ function convert2DInto1D(arr) {
     return output;
 }
 
+// method to switch shading method. Called when the UI slider is triggered.
 function switchShading(box) {
     box.checked ? gl.uniform1i(flag, 1.0) : gl.uniform1i(flag, 0.0);
     box.checked ? document.getElementById("shading").innerHTML = "Gouraud Shading": document.getElementById("shading").innerHTML = "Phong Shading";
 }
 
+// called when the wireframe switch is toggled on the UI
 function toggleWireframe(box) {
     renderW = box.checked;
 }
 
-let a = 1;
-
-//var x;
 function render() {
-    //eyeTheta += 0.03;
 
+    // limit render output to 60FPS. No need to render more frames then the display could show. Input latency is not very important for this application.
     function animate() {
         setTimeout(function () {
 
             requestAnimationFrame(render);
 
-            //a++;
-
             vertices = [];
             normals = [];
 
-            evaluateControlPoints();
+            evaluateControlPoints(); //evaluate new bezier curve
 
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // clear the canvas
 
             axis = normalize(axis);
             gl.uniformMatrix4fv(rotationMatrixLoc, false, flatten(rotationMatrix));
@@ -590,5 +611,5 @@ function render() {
         }, 1000 / 60)
     }
 
-    animate();
+    animate(); // start the render process.
 }
