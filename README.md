@@ -4,7 +4,7 @@ Renders a Bezier Surface with texture mapping and local ligthing
 for textures to load, host the parent folder on a HTTP server
 
 Features include:
-  - **Goraud Shading and  Phong Shading option**
+  - **Gouraud Shading and  Phong Shading option**
   - **Togglable wireframe**
   - **Quaternion rotation and zoom sliders**
   - **Interactive control knob controls**
