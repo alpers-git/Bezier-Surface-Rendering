@@ -47,7 +47,7 @@
             // Because the eye point the is at the orgin
             // the vector from the vertex position to the eye is
 
-            E = -normalize(pos);
+            E = normalize(pos);
 
             // halfway vector
 
@@ -55,8 +55,7 @@
 
             // Transform vertex normal into eye coordinates
     
-            //N = normalize( normalMatrix*vNormal.xyz);
-            N = normalize(mat3(transpose(inverse(modelViewMatrix))) * vNormal.xyz);
+            N = normalize( normalMatrix*vNormal.xyz);
 
             if(flag)
             {
