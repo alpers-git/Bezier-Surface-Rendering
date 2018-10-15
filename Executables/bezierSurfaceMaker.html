@@ -13,6 +13,7 @@
 
         varying vec4 fColor;
         varying vec3 N, L, E;
+        varying vec3 fragPos, fragNormal;
         varying vec2 fTexCoord;
         varying float ldistance;
         uniform bool flag;
@@ -47,7 +48,7 @@
             // Because the eye point the is at the orgin
             // the vector from the vertex position to the eye is
 
-            E = normalize(pos);
+            E = -normalize(pos);
 
             // halfway vector
 
@@ -56,6 +57,9 @@
             // Transform vertex normal into eye coordinates
     
             N = normalize( normalMatrix*vNormal.xyz);
+            
+            fragpos = vPosition.xyz;
+	        fragnormal = vNormal.xyz;
 
             if(flag)
             {
@@ -109,6 +113,9 @@
         uniform vec4 specularProduct;
         uniform float shininess;
         varying vec3 N, L, E;
+        varying vec3 fragPos, fragNormal;
+        uniform mat3 normalMatrix;
+        uniform vec4 lightPosition;
 
         void main()
         {
@@ -120,22 +127,42 @@
             }
             else
             {
-                vec4 f2Color;
+                // Transform vertex normal into eye coordinates
+                N2 = normalize( normalMatrix*vNormal.xyz);
 
-                vec3 H = normalize( L + E );
-                vec4 ambient = ambientProduct;
+                // vector from vertex position to light source
+                // check for directional light
+                vec3 L2;
+                if (lightPosition.w == 0.0)
+                    L2 = normalize(lightPosition.xyz);
+                else
+                    L2 = normalize(lightPosition.xyz - fragpos);
 
-                float Kd = max( dot(L, N), 0.0 );
-                vec4  diffuse = Kd*diffuseProduct;
+                // Because the eye point the is at the orgin
+                // the vector from the vertex position to the eye is
 
-                float Ks = pow( max(dot(N, H), 0.0), shininess );
-                vec4  specular = Ks * specularProduct;
+                vec3 E2 = normalize(fragpos);
 
-                if( dot(L, N) < 0.0 ) specular = vec4(0.0, 0.0, 0.0, 1.0);
+                fatt = 1.0 / (1 + 0.00001f * ldistance + 0.00001f * ldistance * ldistance);
+                vec4 fColor2;
+                
+                vec3 H2 = normalize(L2 + E2);
+                vec4 ambient = u_Material.ambient;
 
-                f2Color = ambient + fatt * (diffuse +specular);
-                f2Color.a = 1.0;
-                gl_FragColor = f2Color* texture2D( texture, fTexCoord );
+                float Kd = max(dot(L2, N2), 0.0);
+                vec4  diffuse = Kd * u_Material.diffuse;
+
+                float Ks = 0.0f;
+                Ks = pow(max(dot(N2, H2), 0.0), u_Material.shininess);
+                vec4  specular = Ks * u_Material.specular ;
+
+                if (dot(L2, N2) < 0.0) specular = vec4(0.0, 0.0, 0.0, 1.0);
+
+                fColor2 = ambient + fatt * (diffuse + specular);
+                vec4 gamma = vec4(1.0 / 2.1);
+                fColor2 = pow(fColor, gamma);
+                fColor2.a = 1.0;
+                frag_color = fColor2 * texture(u_Texture, v_TexCoord);
             }
 
         }
