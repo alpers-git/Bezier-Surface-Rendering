@@ -1,20 +1,3 @@
-<!--
- - Alper Sahıstan - 21501207
- - Celik Koseoglu - 21400196
- - CS465 Computer Graphics
- - Course Instructor: Ugur Gudukbay
- - TA: Aytek Aman
- - Git commits available at: https://github.com/STLKRv1/Bezier-Surface-Rendering
- -
- - Allows for 2 different methods of shading; Gouraud and Phong.
- - Allows for adding or removing control points.
- - Allows different texture mappings.
- - Allows changing the position of light
- - Has quaternion rotations
- - Has zoom functionality
- - and more....
- -->
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -64,7 +47,7 @@
             // Because the eye point the is at the orgin
             // the vector from the vertex position to the eye is
 
-            E = - normalize(pos);
+            E = -normalize(pos);
 
             // halfway vector
 
@@ -110,8 +93,7 @@
 
 
     </script>
-    <meta charset="utf-8">
-    <title>Bezier Surface Rendering</title>
+
     <script id="fragment-shader" type="x-shader/x-fragment">
 
         precision highp float;
@@ -177,7 +159,7 @@
 <div>
 
     <h1>Bezier Surface Rendering</h1>
-    <h4><a href="https://github.com/STLKRv1">Alper Şahıstan</a> &amp; <a href="https://github.com/celikkoseoglu">Çelik Köseoğlu</a></h4>
+    <h4>Alper Şahıstan &amp; Çelik Köseoğlu</h4>
 
     <canvas id="gl-canvas" width="1024" height="512">
         Oops ... your browser doesn't support the HTML5 canvas element
