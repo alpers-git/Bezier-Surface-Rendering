@@ -54,8 +54,9 @@
             vec3 H = normalize( L + E );
 
             // Transform vertex normal into eye coordinates
-
-            N = normalize( normalMatrix*vNormal.xyz);
+    
+            //N = normalize( normalMatrix*vNormal.xyz);
+            N = normalize(mat3(transpose(inverse(modelViewMatrix))) * vNormal)
 
             if(flag)
             {
@@ -128,14 +129,13 @@
                 float Kd = max( dot(L, N), 0.0 );
                 vec4  diffuse = Kd*diffuseProduct;
 
-                float Ks = pow( max(dot(-N, H), 0.0), shininess );
+                float Ks = pow( max(dot(N, H), 0.0), shininess );
                 vec4  specular = Ks * specularProduct;
 
                 if( dot(L, N) < 0.0 ) specular = vec4(0.0, 0.0, 0.0, 1.0);
 
-                f2Color = ambient + diffuse +specular;
+                f2Color = ambient + fatt * (diffuse +specular);
                 f2Color.a = 1.0;
-                f2Color * fatt;
                 gl_FragColor = f2Color* texture2D( texture, fTexCoord );
             }
 
