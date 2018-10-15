@@ -56,7 +56,7 @@
             // Transform vertex normal into eye coordinates
     
             //N = normalize( normalMatrix*vNormal.xyz);
-            N = normalize(mat3(transpose(inverse(modelViewMatrix))) * vNormal)
+            N = normalize(mat3(transpose(inverse(modelViewMatrix))) * vNormal.xyz);
 
             if(flag)
             {
